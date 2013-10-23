@@ -1,0 +1,9 @@
+def generate_env_string
+  env_array = [
+  <% @app_env.each do |key, value| %>
+    "<%= key %>='<%= value %>'",
+  <% end %>
+  ]
+
+  "env #{env_array.join(' ')}"
+end
