@@ -1,1 +1,1 @@
-### Protobit cookbooks for opsworks.
+### Ridoku Cookbooks for OpsWorks.
