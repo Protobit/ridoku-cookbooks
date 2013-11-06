@@ -115,7 +115,11 @@ define :opsworks_deploy do
 
           if deploy[:auto_assets_precompile_on_deploy] &&
             !File.exists?("#{release_path}/${deploy[:document_root]}/assets/manifest.yml")
-            OpsWorks::RailsConfiguration.precompile(application, node, release_path)
+            precompile_assets do
+              deploy_data deploy
+              app application
+              app_path "#{release_path}"
+            end
           end
 
           template "#{node[:deploy][application][:deploy_to]}/shared/config/database.yml" do
