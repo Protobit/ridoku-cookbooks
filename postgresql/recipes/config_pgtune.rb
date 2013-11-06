@@ -136,6 +136,7 @@ end
 
 # Ohai reports node[:memory][:total] in kB, as in "921756kB"
 mem = total_memory.split("kB")[0].to_i / 1024 # in MB
+mem = (mem * 0.9).to_i
 
 #######
 # RAM-related settings computed as in Greg Smith's pgtune script.

@@ -28,7 +28,7 @@ when "debian"
   when node['platform_version'].to_f < 7.0 # All 6.X
     default['postgresql']['version'] = "8.4"
   else
-    default['postgresql']['version'] = "9.2"
+    default['postgresql']['version'] = "9.3"
   end
 
   default['postgresql']['dir'] = "/etc/postgresql/#{node['postgresql']['version']}/main"
@@ -55,19 +55,10 @@ when "ubuntu"
   end
 
   default['postgresql']['dir'] = "/etc/postgresql/#{node['postgresql']['version']}/main"
-  case
-  when (node['platform_version'].to_f <= 10.04) && (! node['postgresql']['enable_pgdg_apt'])
-    default['postgresql']['server']['service_name'] = "postgresql-#{node['postgresql']['version']}"
-  else
-    default['postgresql']['server']['service_name'] = "postgresql"
-  end
+  default['postgresql']['server']['service_name'] = "postgresql"
 
   default['postgresql']['client']['packages'] = %w{postgresql-client libpq-dev}
-  if node['postgresql']['enable_pgdg_apt']
-    default['postgresql']['server']['packages'] = ["postgresql-#{node['postgresql']['version']}"]
-  else
-    default['postgresql']['server']['packages'] = %w{postgresql}
-  end
+  default['postgresql']['server']['packages'] = ["postgresql-#{node['postgresql']['version']}"]
   default['postgresql']['contrib']['packages'] = %w{postgresql-contrib}
 
 when "fedora"
@@ -138,6 +129,10 @@ else
   default['postgresql']['server']['service_name'] = "postgresql"
 end
 
+
+# Set the locale
+default['postgresql']['locale'] = 'en_US.UTF-8'
+
 # These defaults have disparity between which postgresql configuration
 # settings are used because they were extracted from the original
 # configuration files that are now removed in favor of dynamic
@@ -156,7 +151,7 @@ when 'debian'
   default['postgresql']['config']['hba_file'] = "/etc/postgresql/#{node['postgresql']['version']}/main/pg_hba.conf"
   default['postgresql']['config']['ident_file'] = "/etc/postgresql/#{node['postgresql']['version']}/main/pg_ident.conf"
   default['postgresql']['config']['external_pid_file'] = "/var/run/postgresql/#{node['postgresql']['version']}-main.pid"
-  default['postgresql']['config']['listen_addresses'] = 'localhost'
+  default['postgresql']['config']['listen_addresses'] = '0.0.0.0'
   default['postgresql']['config']['port'] = 5432
   default['postgresql']['config']['max_connections'] = 100
   default['postgresql']['config']['unix_socket_directory'] = '/var/run/postgresql' if node['postgresql']['version'].to_f < 9.3
