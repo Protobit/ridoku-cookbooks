@@ -12,6 +12,10 @@ http {
   include       <%= node[:nginx][:dir] %>/mime.types;
   default_type  application/octet-stream;
 
+  <% if node[:nginx].has_key?(:if_modified_since) %>
+  if_modified_since <%= node[:nginx][:if_modified_since] %>;
+  <% end %>
+
   access_log	<%= node[:nginx][:log_dir] %>/access.log;
 
   sendfile on;

@@ -1,10 +1,8 @@
 #
 # Cookbook Name:: nginx
-# Recipe:: configure
-# Author:: AJ Christensen <aj@junglist.gen.nz>
-#          Terry Meacham <zv1n.fire@gmail.com>
+# Recipe:: reload
+# Author:: Terry Meacham <zv1n.fire@gmail.com>
 #
-# Copyright 2008, OpsCode, Inc.
 # Copyright 2013, Protobit, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +17,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-package "nginx"
 
 include_recipe 'nginx::configure'
 
 service "nginx" do
-  action [ :enable, :start ]
+  action [ :enable, :reload ]
 end
