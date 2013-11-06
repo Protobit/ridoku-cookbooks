@@ -48,22 +48,24 @@ module OpsWorks
       end
     end
 
-    def self.is_master_active?(app_name, node)
+    def self.is_master_online?(app_name, node)
       deploy = node[:deploy][app_name]
       assetmaster = deploy[:assetmaster].to_sym
       inst = node[:opsworks][:layers]['rails-app'][:instances]
 
-      inst.key?(assetmaster) &&
-        inst[assetmaster][:status] == 'online'
+      inst.has_key?(assetmaster) && inst[assetmaster][:status] == 'online' &&
+        inst[assetmaster][:ip].match(%r([0-9]))
     end
 
     def self.is_master?(app_name, node)
-      node[:deploy][app_name][:assetmaster] == node[:opsworks][:instance][:hostname]
+      node[:deploy][app_name][:assetmaster] ==
+        node[:opsworks][:instance][:hostname]
     end
 
-    def self.master_url_and_modtime(app_name, node)
+    def self.manifest_info(app_name, node)
       deploy = node[:deploy][app_name]
-      assetmaster = deploy[:assetmaster]
+      assetmaster = deploy[:assetmaster].to_sym
+      manifest_override = deploy[:manifest_source]
       inst = node[:opsworks][:layers]['rails-app'][:instances]
 
       return nil unless inst.key?(assetmaster)
@@ -71,42 +73,10 @@ module OpsWorks
       return nil unless instance[:status] == 'online'
       
       {
-        :manifest => "http://#{instance[:ip]}/assets/manifest.yml",
-        :mod_time => DateTime.strptime(node[:opsworks][:sent_at] ,'%s')
+        :manifest => manifest_override ||
+          "http://#{instance[:ip]}/assets/manifest.yml",
+        :mod_time => DateTime.strptime(node[:opsworks][:sent_at].to_s ,'%s')
       }
-    end
-
-    def self.precompile(app_name, node, app_root_path)
-      if is_master?(app_name, node)
-        Chef::Log.info("This instance is the asset master.")
-
-        # if File.exists?("#{app_root_path}/Gemfile")
-        #   exec = '/usr/local/bin/bundle exec'
-        # end
-
-        # env = build_cmd_environment(node[:deploy][app_name])
-        # cmd = "sudo su deploy -c 'cd #{app_root_path} && #{env} #{exec} rake assets:precompile'"
-
-        # Chef::Log.info(cmd)
-        # Chef::Log.info(`#{cmd}`)
-      else
-        if is_master_active?(app_name, node)
-          fail StandardError.new("Master instance '#{node[:deploy][app_name][:assetmaster]}' is not online")
-        end
-
-        Chef::Log.info("This instance is not the asset master.")
-        # fail StandardError.new('Non-Master is currently not supported.')
-      end
-      
-      if File.exists?("#{app_root_path}/Gemfile")
-        exec = '/usr/local/bin/bundle exec'
-      end
-
-      env = build_cmd_environment(node[:deploy][app_name])
-      cmd = "sudo su deploy -c 'cd #{app_root_path} && #{env} #{exec} rake assets:precompile'"
-
-      Chef::Log.info(cmd)
-      Chef::Log.info(`#{cmd}`)
     end
   end
 end
