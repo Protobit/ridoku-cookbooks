@@ -53,12 +53,6 @@ define :opsworks_deploy do
     end
   end
 
-  ruby_block "change HOME to #{deploy[:home]} for source checkout" do
-    block do
-      ENV['HOME'] = "#{deploy[:home]}"
-    end
-  end
-
   # setup deployment & checkout
   if deploy[:scm] && deploy[:scm][:scm_type] != 'other'
     Chef::Log.debug("Checking out source code of application #{application} with type #{deploy[:application_type]}")
@@ -88,6 +82,8 @@ define :opsworks_deploy do
         svn_password deploy[:scm][:password]
         svn_arguments "--no-auth-cache --non-interactive --trust-server-cert"
         svn_info_args "--no-auth-cache --non-interactive --trust-server-cert"
+      when 'symlink'
+        Chef::Log.info('Repository type is symlink. Do nothing.')
       else
         raise "unsupported SCM type #{deploy[:scm][:scm_type].inspect}"
       end
@@ -165,26 +161,6 @@ define :opsworks_deploy do
   ruby_block "change HOME back to /root after source checkout" do
     block do
       ENV['HOME'] = "/root"
-    end
-  end
-
-  if deploy[:application_type] == 'rails' && node[:opsworks][:instance][:layers].include?('rails-app')
-    case node[:opsworks][:rails_stack][:name]
-
-    when 'apache_passenger'
-      passenger_web_app do
-        application application
-        deploy deploy
-      end
-
-    when 'nginx_unicorn'
-      unicorn_web_app do
-        application application
-        deploy deploy
-      end
-
-    else
-      raise "Unsupport Rails stack"
     end
   end
 

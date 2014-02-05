@@ -70,3 +70,5 @@ node[:deploy].each do |application, deploy|
 end
 
 default[:opsworks][:skip_uninstall_of_other_rails_stack] = false
+
+include_attribute 'deploy::dashing'
