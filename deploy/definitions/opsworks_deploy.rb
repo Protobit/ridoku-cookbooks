@@ -10,6 +10,8 @@ define :opsworks_deploy do
     recursive true
   end
 
+  package 'libpq-dev'
+
   if deploy[:scm]
     ensure_scm_package_installed(deploy[:scm][:scm_type])
 
@@ -67,9 +69,9 @@ define :opsworks_deploy do
       symlink_before_migrate( deploy[:symlink_before_migrate] )
       action deploy[:action]
 
-      if deploy[:application_type] == 'rails'
-        restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
-      end
+      # if deploy[:application_type] == 'rails'
+      #   restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
+      # end
 
       case deploy[:scm][:scm_type].to_s
       when 'git'
@@ -109,15 +111,6 @@ define :opsworks_deploy do
             app application
           end
 
-          if deploy[:auto_assets_precompile_on_deploy] &&
-            !File.exists?("#{release_path}/${deploy[:document_root]}/assets/manifest.yml")
-            precompile_assets do
-              deploy_data deploy
-              app application
-              app_path "#{release_path}"
-            end
-          end
-
           template "#{node[:deploy][application][:deploy_to]}/shared/config/database.yml" do
             cookbook "rails"
             source "database.yml.erb"
@@ -129,6 +122,15 @@ define :opsworks_deploy do
               :environment => node[:deploy][application][:rails_env]
             )
           end.run_action(:create)
+
+          if deploy[:auto_assets_precompile_on_deploy] &&
+            !File.exists?("#{release_path}/${deploy[:document_root]}/assets/manifest.yml")
+            precompile_assets do
+              deploy_data deploy
+              app application
+              app_path "#{release_path}"
+            end
+          end
         elsif deploy[:application_type] == 'php'
           template "#{node[:deploy][application][:deploy_to]}/shared/config/opsworks.php" do
             cookbook 'php'

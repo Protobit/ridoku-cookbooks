@@ -46,7 +46,7 @@ define :precompile_assets do
 
   execute 'precompile assets' do
     if File.exists?("#{app_path}/Gemfile")
-      exec = '/usr/local/bin/bundle exec'
+      exec = '/usr/local/bin/ruby /usr/local/bin/bundle exec'
     end
 
     command ['sudo su deploy',

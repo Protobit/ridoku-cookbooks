@@ -1,20 +1,5 @@
 include_recipe 'deploy'
 
-# alternative/fallback install of bundler for more robustness
-# handle cases where the gem library is there but the executable is missing
-execute "Ruby Bundler install: #{node[:opsworks_bundler][:version]}" do
-
-  start_cmd = "gem install bundler -v=#{node[:opsworks_bundler][:version]} --no-document"
-  start_cmd = "sudo #{start_cmd}"
-    
-  command start_cmd
-  only_if do
-    !system("sudo su deploy -c 'gem list bundler -v=#{node[:opsworks_bundler][:version]} --installed'") || !File.exists?(node[:opsworks_bundler][:executable])
-  end
-
-  action :nothing
-end
-
 node[:deploy].each do |application, deploy|
 
   if deploy[:application_type] != 'other' ||
@@ -27,8 +12,6 @@ node[:deploy].each do |application, deploy|
   opsworks_dashing do
     deploy_data deploy
     app application
-
-    notifies :run, "execute[Ruby Bundler install: #{node[:opsworks_bundler][:version]}]", :immediately
   end
 
   execute "kill Server" do
@@ -40,7 +23,7 @@ node[:deploy].each do |application, deploy|
     action :run
 
     only_if do 
-      File.exists?(pid_file)
+      File.exists?(pid_file) && File.exists?("/proc/#{IO.read(pid_file)}/")
     end
   end
 

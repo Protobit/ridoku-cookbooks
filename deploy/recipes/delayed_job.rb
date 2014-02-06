@@ -15,8 +15,6 @@ node[:deploy].each do |application, deploy|
     user deploy[:user]
     group deploy[:group]
     path deploy[:deploy_to]
-
-    notifies :run, "execute[Ruby Bundler install: #{node[:opsworks_bundler][:version]}]", :immediately
   end
 
   opsworks_rails do
