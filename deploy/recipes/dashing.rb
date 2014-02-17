@@ -41,9 +41,9 @@ node[:deploy].each do |application, deploy|
 
  execute "start Server" do
    cwd deploy[:current_path]
+   env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
 
-   start_cmd = "auth_token=\"#{deploy[:auth_token]}\""
-   start_cmd = "#{start_cmd} /usr/local/bin/bundle exec" #--path #{deploy[:home]}/.bundler/#{application}"
+   start_cmd = "#{start_cmd} #{env} /usr/local/bin/bundle exec" #--path #{deploy[:home]}/.bundler/#{application}"
    start_cmd = "#{start_cmd} #{node[:opsworks][:dashing][:start_command]}"
    start_cmd = "#{start_cmd} --port #{deploy[:port]} --daemonize"
    start_cmd = "sudo su deploy -c '#{start_cmd}'"

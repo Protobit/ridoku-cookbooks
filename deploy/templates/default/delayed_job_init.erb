@@ -1,0 +1,55 @@
+#!/bin/sh
+
+# define variables that are required
+: ${SERVICE_PATH:='<%= @current_path %>}
+: ${SERVICE_ENV:='<%= @environment %>'}
+: ${SERVICE_QUEUE:='<%= @queues %>'}
+: ${SERVICE_USER:='<%= @username %>'}
+: ${RUBY_PATH:='/usr/local/bin/'}
+
+set_path="cd ${SERVICE_PATH}"
+
+case "$1" in
+  start)
+    echo -n "Starting delayed_job:"
+    su - ${SERVICE_USER} -c "$set_path && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job -n 3 --queues=${SERVICE_QUEUE} start" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+    res=$?
+    if [ $res -eq 0 ]; then
+      echo "done."
+    else
+      echo "failed."
+    fi
+    exit $res
+  ;;
+  stop)
+    echo -n "Stopping delayed_job: "
+    su - ${SERVICE_USER} -c "$set_path && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job stop" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+    res=$?
+    if [ $res -eq 0 ]; then
+      echo "done."
+    else
+      echo "failed."
+    fi
+    exit $res
+  ;;
+  zap)
+    echo -n "Zapping delayed_job: "
+    $set_path
+
+    for f in tmp/pids/delayed_job.*; do
+      kill -9 $(cat $f) >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+      rm -f $f
+    done
+
+    echo "done."
+    cd -
+    exit 0
+  ;;
+  *)
+    N=/etc/init.d/$(basename $0)
+    echo "Usage: $N {start|stop|zap}" >&2
+    exit 1
+  ;;
+esac
+
+exit 0

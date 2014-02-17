@@ -1,6 +1,7 @@
 module OpsWorks
   module RailsConfiguration
     def self.build_cmd_environment(app_config)
+      return '' unless app_config.key?(:app_env) && app_config[:app_env].is_a?(Hash)
       app_config[:app_env].map do |key, value|
         "#{key}='#{value}'"
       end.join(' ')
