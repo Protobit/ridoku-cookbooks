@@ -18,8 +18,14 @@
 # limitations under the License.
 #
 
-def policy_exists?(name)
-  cmd = Mixlib::ShellOut.new("rabbitmqctl list_policies |grep '#{name}\\b'")
+require 'shellwords'
+
+def policy_exists?(vhost, name)
+  cmd = 'rabbitmqctl list_policies'
+  cmd << " -p #{Shellwords.escape vhost}" unless vhost.nil?
+  cmd << " |grep '#{name}\\b'"
+
+  cmd = Mixlib::ShellOut.new(cmd)
   cmd.environment['HOME'] = ENV.fetch('HOME', '/root')
   cmd.run_command
   begin
@@ -31,8 +37,8 @@ def policy_exists?(name)
 end
 
 action :set do
-  unless policy_exists?(new_resource.policy)
-    cmd = "rabbitmqctl set_policy"
+  unless policy_exists?(new_resource.vhost, new_resource.policy)
+    cmd = 'rabbitmqctl set_policy'
     cmd << " -p #{new_resource.vhost}" unless new_resource.vhost.nil?
     cmd << " #{new_resource.policy}"
     cmd << " \"#{new_resource.pattern}\""
@@ -40,22 +46,18 @@ action :set do
 
     first_param = true
     new_resource.params.each do |key, value|
-      unless first_param      
-        cmd << ","
-      end
+      cmd << ',' unless first_param
+
       if value.kind_of? String
-        cmd << "\"#{key}\":\"#{value}\"" 
+        cmd << "\"#{key}\":\"#{value}\""
       else
-        cmd << "\"#{key}\":#{value}" 
+        cmd << "\"#{key}\":#{value}"
       end
       first_param = false
     end
 
     cmd << "}'"
-
-    if new_resource.priority
-      cmd << " #{new_resource.priority}"
-    end
+    cmd << " #{new_resource.priority}" if new_resource.priority
 
     execute "set_policy #{new_resource.policy}" do
       command cmd
@@ -67,7 +69,7 @@ action :set do
 end
 
 action :clear do
-  if policy_exists?(new_resource.policy)
+  if policy_exists?(new_resource.vhost, new_resource.policy)
     execute "clear_policy #{new_resource.policy}" do
       command "rabbitmqctl clear_policy #{new_resource.policy}"
     end
@@ -78,8 +80,8 @@ action :clear do
 end
 
 action :list do
-  execute "list_policies" do
-    command "rabbitmqctl list_policies"
+  execute 'list_policies' do
+    command 'rabbitmqctl list_policies'
   end
 
   new_resource.updated_by_last_action(true)

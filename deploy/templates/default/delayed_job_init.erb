@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 # define variables that are required
-: ${SERVICE_PATH:='<%= @current_path %>}
+: ${SERVICE_PATH:='<%= @current_path %>'}
 : ${SERVICE_ENV:='<%= @environment %>'}
 : ${SERVICE_QUEUE:='<%= @queues %>'}
 : ${SERVICE_USER:='<%= @username %>'}
@@ -9,7 +9,7 @@
 
 set_path="cd ${SERVICE_PATH}"
 
-function start_dj_server() {
+start_dj_server() {
   echo -n "Starting delayed_job:"
   su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job -n 3 --queues=${SERVICE_QUEUE} start" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
   res=$?
@@ -21,7 +21,7 @@ function start_dj_server() {
   return $res
 }
 
-function stop_dj_server() {
+stop_dj_server() {
   echo -n "Stopping delayed_job: "
   su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job stop" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
   res=$?
@@ -33,7 +33,7 @@ function stop_dj_server() {
   return $res
 }
 
-function zap_dj_server() {
+zap_dj_server() {
   echo -n "Zapping delayed_job: "
   ${set_path}
 
@@ -60,6 +60,7 @@ case "$1" in
     stop_dj_server || zap_dj_server
     start_dj_server
     exit $?
+  ;;
   zap)
     zap_dj_server
     exit $?

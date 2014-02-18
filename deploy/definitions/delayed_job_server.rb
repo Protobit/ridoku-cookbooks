@@ -7,12 +7,6 @@ define :delayed_job_server do
        deploy.has_key?(rails_key) && deploy[rails_key] ) ||
        node[:opsworks][:instance][:layers].include?('workers')
 
-    service "#{application} Worker" do
-      service_name application
-      supports :start => true, :stop => true, :zap => true, :restart => true
-      action :enable
-    end
-
     # Create directory for application cron scripts.
     directory node[:opsworks][:delayed_job][:cron_path] do
       mode 0755
@@ -20,7 +14,7 @@ define :delayed_job_server do
     end
 
     # Create init script for applications.
-    template "/init.d/#{application}" do
+    template "/etc/init.d/#{application}-#{deploy[:rails_env]}" do
       source 'delayed_job_init.erb'
       mode '0700'
 
@@ -36,12 +30,10 @@ define :delayed_job_server do
         :username => deploy[:user],
         :queues => ques
       )
-
-      notifies "service[#{application} Worker]", :restart, :immediate
     end
 
     # Create Cron Script in cron script directory
-    template "#{node[:opsworks][:delayed_job][:cron_path]}/#{application}.sh" do
+    template "#{node[:opsworks][:delayed_job][:cron_path]}/#{application}-#{deploy[:rails_env]}.sh" do
       source 'delayed_job_cron.sh.erb'
       mode '0700'
 
@@ -52,15 +44,19 @@ define :delayed_job_server do
         :current_path => deploy[:current_path],
         :application => application
       )
+    end
 
-      notifies "cron[#{application} Cron]", :restart, :immediate
+    service "#{application}-#{deploy[:rails_env]} Worker" do
+      service_name application
+      supports :start => true, :stop => true, :zap => true, :restart => true
+      action [:enable, :restart]
     end
 
     # Add application cron job.
-    cron "#{application} Cron" do
+    cron "#{application}-#{deploy[:rails_env]} Cron" do
       minute '*/5'
-      command "#{node[:opsworks][:delayed_job][:cron_path]}/#{application}.sh > /dev/null 2>&1"
-      action :nothing
+      command "#{node[:opsworks][:delayed_job][:cron_path]}/#{application}-#{deploy[:rails_env]}.sh > /dev/null 2>&1"
+      action :create
     end
   end
 end
