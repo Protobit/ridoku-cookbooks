@@ -1,16 +1,28 @@
-define :rails_server do
+define :delayed_job_server do
   application = params[:app]
   deploy = params[:deploy_data]
   rails_key = 'work_from_app_server'
 
   if ( node[:opsworks][:instance][:layers].include?('rails-app') &&
-       deploy.key?(rails_key) && deploy[rails_key] ) ||
+       deploy.has_key?(rails_key) && deploy[rails_key] ) ||
        node[:opsworks][:instance][:layers].include?('workers')
 
+    service "#{application} Worker" do
+      service_name application
+      supports :start => true, :stop => true, :zap => true, :restart => true
+      action :enable
+    end
 
+    # Create directory for application cron scripts.
+    directory node[:opsworks][:delayed_job][:cron_path] do
+      mode 0755
+      action :create
+    end
+
+    # Create init script for applications.
     template "/init.d/#{application}" do
-      source 'environment.rb.erb'
-      mode '0600'
+      source 'delayed_job_init.erb'
+      mode '0700'
 
       group 'root'
       owner 'root'
@@ -18,68 +30,37 @@ define :rails_server do
       env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
       ques = deploy['workers']['delayed_job'].join(',')
 
-      variables({
-        environment: env,
-        current_path: deploy[:current_path],
-        username: deploy[:user],
-        queues: ques
-      })
+      variables(
+        :environment => env,
+        :current_path => deploy[:current_path],
+        :username => deploy[:user],
+        :queues => ques
+      )
 
-      only_if do
-        File.exists?("#{deploy[:deploy_to]}") &&
-        File.exists?("#{deploy[:deploy_to]}/shared/config/")
-      end
+      notifies "service[#{application} Worker]", :restart, :immediate
     end
 
+    # Create Cron Script in cron script directory
+    template "#{node[:opsworks][:delayed_job][:cron_path]}/#{application}.sh" do
+      source 'delayed_job_cron.sh.erb'
+      mode '0700'
 
-    # execute "Stop DJ Server" do
-    #   pid_dir = "#{deploy[:current_path]}/tmp/pids"
-    #   pid_file = "#{pid_dir}/delayed_job.pid"
+      group 'root'
+      owner 'root'
 
-    #   start_cmd = "cd #{deploy[:current_path]} &&"
-    #   start_cmd = "#{start_cmd} script/delayed_job #{node[:opsworks][:delayed_job][:stop_command]}"
-    #   start_cmd = "sudo su deploy -c '#{start_cmd}'"
-    #   Chef::Log.info(start_cmd)
+      variables(
+        :current_path => deploy[:current_path],
+        :application => application
+      )
 
-    #   command start_cmd
+      notifies "cron[#{application} Cron]", :restart, :immediate
+    end
 
-    #   only_if do 
-    #     File.exists?(pid_file) && File.exists?("/proc/#{IO.read(pid_file)}/")
-    #   end
-    # end
-
-    # execute "Kill DJ Server" do
-    #   pid_dir = "#{deploy[:current_path]}/tmp/pids"
-    #   pid_file = "#{pid_dir}/delayed_job.pid"
-    #   cwd pid_dir
-
-    #   command "sudo kill $(cat #{pid_file})"
-    #   action :run
-
-    #   only_if do 
-    #     File.exists?(pid_file) && File.exists?("/proc/#{IO.read(pid_file)}/")
-    #   end
-    # end
-
-    # execute "Start DJ Server" do
-    #   env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
-    #   count = deploy['workers']['delayed_job'].length
-    #   queues = deploy['workers']['delayed_job'].join(',')
-
-    #   start_cmd = "cd #{deploy[:current_path]} &&"
-    #   start_cmd = "#{start_cmd} #{env} script/delayed_job "
-    #   start_cmd = "#{start_cmd} -n #{count} --queue=#{queues}"
-    #   start_cmd = "#{start_cmd} #{node[:opsworks][:delayed_job][:start_command]}"
-    #   start_cmd = "#{start_cmd}"
-    #   start_cmd = "sudo su deploy -c '#{start_cmd}'"
-    #   Chef::Log.info(start_cmd)
-
-    #   command start_cmd
-    #   action :run
-     
-    #   only_if do 
-    #     File.exists?(deploy[:current_path]) && File.exists?("#{deploy[:current_path]}/script/delayed_job")
-    #   end
-    # end
+    # Add application cron job.
+    cron "#{application} Cron" do
+      minute '*/5'
+      command "#{node[:opsworks][:delayed_job][:cron_path]}/#{application}.sh > /dev/null 2>&1"
+      action :nothing
+    end
   end
 end

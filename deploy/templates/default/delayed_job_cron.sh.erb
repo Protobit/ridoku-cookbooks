@@ -1,1 +1,18 @@
-delayed_job_cron.sh.erb
+#!/bin/bash
+
+pid_path=<%= @current_path %>/tmp/pids/
+app_name=<%= @application %>
+
+function restart_job_server() {
+  echo "${app_name} Server Restarting..."
+  service ${app_name} restart
+  exit $?
+}
+
+ls ${pid_path}/delayed_job.* &> /dev/null || start_job_server
+
+for f in ${pid_path}/delayed_job.*.pid; do
+  [[ -e /proc/$(cat $f) ]] || restart_job_server
+done
+
+echo "${app_name} Server Running..."

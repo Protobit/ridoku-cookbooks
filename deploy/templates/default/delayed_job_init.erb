@@ -9,45 +9,64 @@
 
 set_path="cd ${SERVICE_PATH}"
 
+function start_dj_server() {
+  echo -n "Starting delayed_job:"
+  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job -n 3 --queues=${SERVICE_QUEUE} start" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+  res=$?
+  if [ $res -eq 0 ]; then
+    echo "done."
+  else
+    echo "failed."
+  fi
+  return $res
+}
+
+function stop_dj_server() {
+  echo -n "Stopping delayed_job: "
+  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job stop" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+  res=$?
+  if [ $res -eq 0 ]; then
+    echo "done."
+  else
+    echo "failed."
+  fi
+  return $res
+}
+
+function zap_dj_server() {
+  echo -n "Zapping delayed_job: "
+  ${set_path}
+
+  for f in tmp/pids/delayed_job.*; do
+    kill -9 $(cat $f) >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+    rm -f $f
+  done
+
+  echo "done."
+  cd -
+  return 0
+}
+
 case "$1" in
   start)
-    echo -n "Starting delayed_job:"
-    su - ${SERVICE_USER} -c "$set_path && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job -n 3 --queues=${SERVICE_QUEUE} start" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
-    res=$?
-    if [ $res -eq 0 ]; then
-      echo "done."
-    else
-      echo "failed."
-    fi
-    exit $res
+    start_dj_server
+    exit $?
   ;;
   stop)
-    echo -n "Stopping delayed_job: "
-    su - ${SERVICE_USER} -c "$set_path && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job stop" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
-    res=$?
-    if [ $res -eq 0 ]; then
-      echo "done."
-    else
-      echo "failed."
-    fi
-    exit $res
+    stop_dj_server
+    exit $?
   ;;
+  restart)
+    stop_dj_server || zap_dj_server
+    start_dj_server
+    exit $?
   zap)
-    echo -n "Zapping delayed_job: "
-    $set_path
-
-    for f in tmp/pids/delayed_job.*; do
-      kill -9 $(cat $f) >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
-      rm -f $f
-    done
-
-    echo "done."
-    cd -
-    exit 0
+    zap_dj_server
+    exit $?
   ;;
   *)
     N=/etc/init.d/$(basename $0)
-    echo "Usage: $N {start|stop|zap}" >&2
+    echo "Usage: $N {start|stop|restart|zap}" >&2
     exit 1
   ;;
 esac

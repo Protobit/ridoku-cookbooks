@@ -3,8 +3,10 @@ include_recipe 'deploy'
 node[:deploy].each do |application, deploy|
 
   if deploy[:application_type] != 'rails' ||
-    !deploy.key?('workers') || !deploy['workers'].key?('delayed_job') ||
-    deploy['workers']['delayed_job'].length == 0
+    !deploy.has_key?('workers') ||
+    !deploy['workers'].has_key?('delayed_job') ||
+    deploy['workers']['delayed_job'].length == 0 ||
+    deploy['work_from_app_server']
       Chef::Log.debug("Skipping deploy::delayed_job, #{application} "\
         "application does not appear to have any delayed job queues!")
     next
