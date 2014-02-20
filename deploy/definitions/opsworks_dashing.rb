@@ -12,17 +12,14 @@ define :opsworks_dashing do
     recursive true
   end
 
-
-  unless deploy[:symlink]
-    # create shared/ directory structure
-    ['pids'].each do |dir_name|
-      directory "#{params[:path]}/shared/#{dir_name}" do
-        group params[:group]
-        owner params[:user]
-        mode 0770
-        action :create
-        recursive true
-      end
+  # create shared/ directory structure
+  ['pids', 'log'].each do |dir_name|
+    directory "#{deploy[:deploy_to]}/shared/#{dir_name}" do
+      group params[:group]
+      owner params[:user]
+      mode 0770
+      action :create
+      recursive true
     end
   end
 
@@ -67,6 +64,47 @@ define :opsworks_dashing do
     end
   end
 
+  # setup deployment & checkout
+  Chef::Log.debug("Checking out source code of Dashing application #{application}.")
+  deploy deploy[:deploy_to] do
+    repository deploy[:scm][:repository]
+    user deploy[:user]
+    group deploy[:group]
+    revision deploy[:scm][:revision]
+
+    migrate false
+    environment deploy[:environment].to_hash
+    action :deploy
+
+    case deploy[:scm][:scm_type].to_s
+    when 'git'
+      scm_provider :git
+      enable_submodules deploy[:enable_submodules]
+      shallow_clone deploy[:shallow_clone]
+    when 'svn'
+      scm_provider :subversion
+      svn_username deploy[:scm][:user]
+      svn_password deploy[:scm][:password]
+      svn_arguments "--no-auth-cache --non-interactive --trust-server-cert"
+      svn_info_args "--no-auth-cache --non-interactive --trust-server-cert"
+    when 'symlink'
+      Chef::Log.info('Repository type is symlink. Do nothing.')
+    else
+      raise "unsupported SCM type #{deploy[:scm][:scm_type].inspect}"
+    end
+
+    before_migrate do
+      link_tempfiles_to_current_release
+
+      # run user provided callback file
+      run_callback_from_file("#{release_path}/deploy/before_migrate.rb")
+    end
+
+    not_if do
+      deploy.has_key?(:symlink)
+    end
+  end
+
   deploy = node[:deploy][application]
 
   directory "#{deploy[:deploy_to]}/shared/cached-copy" do
@@ -85,5 +123,8 @@ define :opsworks_dashing do
     group "root"
     mode 0644
     variables( :log_dirs => ["#{deploy[:deploy_to]}/shared/log" ] )
+    not_if do
+      deploy.has_key?(:symlink)
+    end
   end
 end 

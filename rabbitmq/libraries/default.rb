@@ -23,7 +23,7 @@ module Opscode
     # for rendering into the rabbit.config template.
     def format_kernel_parameters
       rendered = []
-      kernel = node['rabbitmq']['kernel'].dup
+      kernel = node['rabbitmq']['kernel'].dup.to_hash
 
       # This parameter is special and needs commas instead of periods.
       rendered << "{inet_dist_use_interface, {#{kernel[:inet_dist_use_interface].gsub(/\./, ',')}}}" if kernel[:inet_dist_use_interface]
@@ -32,7 +32,8 @@ module Opscode
       # Otherwise, we can just render it nicely as Erlang wants. This
       # theoretically opens the door for arbitrary kernel_app parameters to be
       # declared.
-      kernel.select { |k, v| !v.nil? }.each_pair do |param, val|
+      kernel.each_pair do |param, val|
+        next if val.nil?
         rendered << "{#{param}, #{val}}"
       end
 

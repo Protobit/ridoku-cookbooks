@@ -1,7 +1,7 @@
 #!/bin/bash
 
 pid_path=<%= @current_path %>/tmp/pids/
-app_name=<%= @application %>
+app_name=<%= @service %>
 
 function restart_job_server() {
   echo "${app_name} Server Restarting..."
