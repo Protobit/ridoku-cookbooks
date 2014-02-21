@@ -23,13 +23,15 @@ define :delayed_job_server do
       owner 'root'
 
       env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
-      ques = deploy['workers']['delayed_job'].join(',')
+      ques = deploy['workers']['delayed_job']
 
       variables(
         :environment => env,
         :current_path => deploy[:current_path],
-        :username => deploy[:user],
-        :queues => ques
+        :user => deploy[:user],
+        :group => deploy[:group],
+        :queues => ques.join(','),
+        :queue_count => ques.length
       )
     end
 

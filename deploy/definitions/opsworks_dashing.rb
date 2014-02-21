@@ -12,17 +12,6 @@ define :opsworks_dashing do
     recursive true
   end
 
-  # create shared/ directory structure
-  ['pids', 'log'].each do |dir_name|
-    directory "#{deploy[:deploy_to]}/shared/#{dir_name}" do
-      group params[:group]
-      owner params[:user]
-      mode 0770
-      action :create
-      recursive true
-    end
-  end
-
   execute "symlinking mount if necessary" do
     command "rm -f #{deploy[:deploy_to]}/current; ln -s #{deploy[:symlink]} #{deploy[:deploy_to]}/current"
     action :run
@@ -96,6 +85,18 @@ define :opsworks_dashing do
     before_migrate do
       link_tempfiles_to_current_release
 
+      execute "dashing bundle install" do
+        start_cmd = "cd #{release_path} &&"
+        start_cmd = "#{start_cmd} /usr/local/bin/ruby /usr/local/bin/bundle install --path #{deploy[:home]}/.bundler/#{application} --without=#{deploy[:ignore_bundler_groups].join(' ')}"
+        start_cmd = "sudo su deploy -c '#{start_cmd}'"
+        Chef::Log.info(start_cmd)
+
+        command start_cmd
+        only_if do 
+          File.exists?(release_path)
+        end
+      end
+
       # run user provided callback file
       run_callback_from_file("#{release_path}/deploy/before_migrate.rb")
     end
@@ -112,6 +113,48 @@ define :opsworks_dashing do
     action :delete
     only_if do
       deploy[:delete_cached_copy]
+    end
+  end
+
+  template "#{deploy[:deploy_to]}/shared/config/pids.json" do
+    backup false
+    source "dashing_pids.json.erb"
+    cookbook 'deploy'
+    owner deploy[:user]
+    group deploy[:group]
+    mode 0644
+
+    pids = {}
+    node['deploy'].each do |app, config|
+      next unless config.has_key?('workers')
+      next unless config['workers'].is_a?(Hash) && config['workers'].has_key?('delayed_job')
+
+      count = config['workers']['delayed_job'].length
+
+      deploy_to = config[:deploy_to]
+      pids[app] = []
+
+      if count > 1
+        count.times do |idx|
+          pids[app] << "#{deploy_to}/shared/pids/delayed_job.#{idx}.pid"
+        end
+      else
+        pids[app] << "#{deploy_to}/shared/pids/delayed_job.pid"
+      end
+    end
+
+    variables( :pids_json => JSON.generate(pids) )
+
+    not_if do
+      deploy.has_key?(:symlink)
+    end
+  end
+
+  execute "symlinking config dir" do
+    command "rm -rf #{deploy[:current_path]}/config; ln -s #{deploy[:deploy_to]}/shared/config #{deploy[:current_path]}/config"
+    action :run
+    not_if do
+      deploy.has_key?(:symlink)
     end
   end
 

@@ -9,35 +9,36 @@ node[:deploy].each do |application, deploy|
     next
   end
 
+  opsworks_deploy_dir do
+    user deploy[:user]
+    group deploy[:group]
+    path deploy[:deploy_to]
+  end
+
   opsworks_dashing do
     deploy_data deploy
     app application
   end
 
-  execute "kill Server" do
-    pid_dir = "#{deploy[:current_path]}/tmp/pids"
-    pid_file = "#{pid_dir}/thin.pid"
-    cwd pid_dir
+ execute "stop Server" do
+   cwd deploy[:current_path]
+   env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
 
-    command "sudo kill $(cat #{pid_file})"
-    action :run
+   start_cmd = "#{env} /usr/local/bin/ruby /usr/local/bin/bundle exec" #--path #{deploy[:home]}/.bundler/#{application}"
+   start_cmd = "#{start_cmd} #{node[:opsworks][:dashing][:stop_command]}"
+   start_cmd = "sudo su deploy -c '#{start_cmd}'"
+   Chef::Log.info(start_cmd)
 
-    only_if do 
-      File.exists?(pid_file) && File.exists?("/proc/#{IO.read(pid_file)}/")
-    end
-  end
+   command start_cmd
+   action :run
+   
+   only_if do 
+     Chef::Log.info("Checking deploy path: #{deploy[:current_path]}")
+     File.exists?(deploy[:current_path])
+   end
 
-  execute "dashing bundle install" do
-    start_cmd = "cd #{deploy[:current_path]} &&"
-    start_cmd = "#{start_cmd} /usr/local/bin/ruby /usr/local/bin/bundle install --path #{deploy[:home]}/.bundler/#{application} --without=#{deploy[:ignore_bundler_groups].join(' ')}"
-    start_cmd = "sudo su deploy -c '#{start_cmd}'"
-    Chef::Log.info(start_cmd)
-
-    command start_cmd
-    only_if do 
-      File.exists?(deploy[:current_path])
-    end
-  end
+   notifies :run, 'execute[start Server]', :immediate
+ end
 
  execute "start Server" do
    cwd deploy[:current_path]
@@ -50,7 +51,7 @@ node[:deploy].each do |application, deploy|
    Chef::Log.info(start_cmd)
 
    command start_cmd
-   action :run
+   action :nothing
    
    only_if do 
      Chef::Log.info("Checking deploy path: #{deploy[:current_path]}")

@@ -4,14 +4,20 @@
 : ${SERVICE_PATH:='<%= @current_path %>'}
 : ${SERVICE_ENV:='<%= @environment %>'}
 : ${SERVICE_QUEUE:='<%= @queues %>'}
-: ${SERVICE_USER:='<%= @username %>'}
+: ${SERVICE_QUEUE_COUNT:='<%= @queue_count %>'}
+: ${SERVICE_USER:='<%= @user %>'}
+: ${SERVICE_GROUP:='<%= @group %>'}
 : ${RUBY_PATH:='/usr/local/bin/'}
 
+SERVICE_LOG=${SERVICE_PATH}/log/delayed_job.log
 set_path="cd ${SERVICE_PATH}"
+
+touch ${SERVICE_LOG}
+chown ${SERVICE_USER}:${SERVICE_GROUP} ${SERVICE_LOG}
 
 start_dj_server() {
   echo -n "Starting delayed_job:"
-  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job -n 3 --queues=${SERVICE_QUEUE} start" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job -n ${SERVICE_QUEUE_COUNT} --queues=${SERVICE_QUEUE} start" >> ${SERVICE_LOG} 2>&1
   res=$?
   if [ $res -eq 0 ]; then
     echo "done."
@@ -23,7 +29,7 @@ start_dj_server() {
 
 stop_dj_server() {
   echo -n "Stopping delayed_job: "
-  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job stop" >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec script/delayed_job stop" >> ${SERVICE_LOG} 2>&1
   res=$?
   if [ $res -eq 0 ]; then
     echo "done."
@@ -38,7 +44,7 @@ zap_dj_server() {
   ${set_path}
 
   for f in tmp/pids/delayed_job.*; do
-    kill -9 $(cat $f) >> ${SERVICE_PATH}/log/delayed_job.log 2>&1
+    kill -9 $(cat $f) >> ${SERVICE_LOG} 2>&1
     rm -f $f
   done
 
