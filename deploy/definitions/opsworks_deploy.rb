@@ -69,9 +69,9 @@ define :opsworks_deploy do
       symlink_before_migrate( deploy[:symlink_before_migrate] )
       action deploy[:action]
 
-      # if deploy[:application_type] == 'rails'
-      #   restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
-      # end
+      if deploy[:application_type] == 'rails'
+        restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
+      end
 
       case deploy[:scm][:scm_type].to_s
       when 'git'
