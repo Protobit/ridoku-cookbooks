@@ -47,14 +47,6 @@ define :opsworks_deploy do
 
   deploy = node[:deploy][application]
 
-  directory "#{deploy[:deploy_to]}/shared/cached-copy" do
-    recursive true
-    action :delete
-    only_if do
-      deploy[:delete_cached_copy]
-    end
-  end
-
   # setup deployment & checkout
   if deploy[:scm] && deploy[:scm][:scm_type] != 'other'
     Chef::Log.debug("Checking out source code of application #{application} with type #{deploy[:application_type]}")
@@ -68,6 +60,8 @@ define :opsworks_deploy do
       environment deploy[:environment].to_hash
       symlink_before_migrate( deploy[:symlink_before_migrate] )
       action deploy[:action]
+
+      ENV.delete('BUNDLE_GEMFILE')
 
       if deploy[:application_type] == 'rails'
         restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
@@ -163,6 +157,14 @@ define :opsworks_deploy do
   ruby_block "change HOME back to /root after source checkout" do
     block do
       ENV['HOME'] = "/root"
+    end
+  end
+
+  directory "#{deploy[:deploy_to]}/shared/cached-copy" do
+    recursive true
+    action :delete
+    only_if do
+      deploy[:delete_cached_copy]
     end
   end
 
