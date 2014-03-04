@@ -27,6 +27,6 @@ end
 
 service "postgresql" do
   service_name node['postgresql']['server']['service_name']
-  supports :restart => true, :status => true, :reload => true
+  supports :restart => true, :status => true, :reload => true, :start => true
   action [:enable]
 end

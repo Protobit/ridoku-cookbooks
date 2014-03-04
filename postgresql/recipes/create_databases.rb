@@ -5,8 +5,8 @@ node[:postgresql][:databases].each do |dbase|
 
   pg_database dbase[:database] do
     owner dbase[:username]
-    encoding "utf8"
+    encoding node['postgresql']['encoding']
     template "template0"
-    locale "en_US.UTF8"
+    locale node['postgresql']['locale']
   end
 end

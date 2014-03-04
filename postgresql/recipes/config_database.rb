@@ -21,18 +21,6 @@ when "debian"
       File.exists?("#{node['postgresql']['config']['data_directory']}/PG_VERSION")
     end
   end
-
-  file "#{node['postgresql']['config']['data_directory']}/pg_hba.conf" do
-    action :delete
-  end
-
-  file "#{node['postgresql']['config']['data_directory']}/postgresql.conf" do
-    action :delete
-  end
-
-  file "#{node['postgresql']['config']['data_directory']}/pg_ident.conf" do
-    action :delete
-  end
 else
   Chef::Application.fatal!('Invalid platform family! (ubuntu only).')
 end
@@ -43,7 +31,8 @@ include_recipe 'postgresql::config_initdb'
 include_recipe 'postgresql::config_pgtune'
 include_recipe 'postgresql::config_ssl'
 
-shmmax = node['memory']['total'].split("kB")[0].to_i*1024*256 # in bytes 1/4 of total mem
+shmmax = node['memory']['total'].split("kB")[0].to_i*1024*256
+# in bytes 1/4 of total mem
 
 # This is required on ubuntu.  The SHMMAX is set reallly low.
 # https://bugs.launchpad.net/ubuntu/+source/linux/+bug/264336
@@ -61,18 +50,42 @@ end
 #   command 'sysctl -w kernel.sem=250 256000 32 1024'
 # end
 
-template "#{node['postgresql']['dir']}/postgresql.conf" do
-  source "postgresql.conf.erb"
-  owner "postgres"
-  group "postgres"
-  mode 0600
-end
-
+# Don't worry about restricting the remote IP address; this will be handled
+# by security groups in AWS.
 node['postgresql']['databases'].each do |db|
   node.default['postgresql']['pg_hba'] << {
     :type => 'hostssl', :db => db[:database], :user => db[:username],
     :addr => '0.0.0.0/0', :method => 'md5'
   }
+
+  # Add application cron job.
+  cron "Ganglia Crontask for #{db['app']}" do
+    minute '*/5'
+    user 'postgres'
+    command "/etc/rid-workers/postgresql-ganglia.rb #{db[:database]} -n #{db[:app]} > /dev/null 2>&1"
+    action :create
+  end
+end
+
+# We don't want to restart the postgresql server, so ensure its started prior
+# to reloading.
+service "postgresql" do
+  action :start
+end
+
+# Set node['postgresql']['restart'] to TRUE if a configuration element that
+# requires a true restart is changed.
+template "#{node['postgresql']['dir']}/postgresql.conf" do
+  source "postgresql.conf.erb"
+  owner "postgres"
+  group "postgres"
+  mode 0600
+
+  if node['postgresql']['restart']
+    notifies :restart, 'service[postgresql]'
+  else
+    notifies :reload, 'service[postgresql]'
+  end
 end
 
 template "#{node['postgresql']['dir']}/pg_hba.conf" do
@@ -80,12 +93,22 @@ template "#{node['postgresql']['dir']}/pg_hba.conf" do
   owner "postgres"
   group "postgres"
   mode 0600
+
+  notifies :reload, 'service[postgresql]'
 end
 
-execute 'start_postgresql' do
-  user 'root'
-  command "pg_ctlcluster #{node['postgresql']['version']} main start"
-  action :run
+directory '/etc/rid-workers' do
+  owner "root"
+  group "root"
+  mode 0755
+  action :create
+end
+
+template "/etc/rid-workers/postgresql-ganglia.rb" do
+  source "postgresql-ganglia.rb.erb"
+  owner "root"
+  group "root"
+  mode 0755
 end
 
 # NOTE: Consider two facts before modifying "assign-postgres-password":

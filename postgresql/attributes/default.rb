@@ -131,6 +131,7 @@ end
 
 
 # Set the locale
+default['postgresql']['encoding'] = 'utf8'
 default['postgresql']['locale'] = 'en_US.UTF-8'
 
 # These defaults have disparity between which postgresql configuration
@@ -145,6 +146,17 @@ default['postgresql']['locale'] = 'en_US.UTF-8'
 #
 # The ssl config attribute is generated in the recipe to avoid awkward
 # merge/precedence order during the Chef run.
+
+default['postgresql']['cert_attributes'] = {
+  'rsa_passphrase' => '1029384756',
+  'country' => 'US',
+  'state' => 'CA',
+  'city' => 'Los Angeles',
+  'organization' => 'ridoku',
+  'common_name' => 'www.ridoku.com',
+  'email' => 'admin@ridoku.com'
+}
+
 case node['platform_family']
 when 'debian'
   default['postgresql']['config']['data_directory'] = "/var/lib/postgresql/#{node['postgresql']['version']}/main"
