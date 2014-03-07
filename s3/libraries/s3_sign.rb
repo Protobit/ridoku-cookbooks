@@ -32,6 +32,9 @@ class S3Sign
   def initialize(aws_access_key_id, aws_secret_access_key)
     @aws_access_key_id = aws_access_key_id
     @aws_secret_access_key = aws_secret_access_key
+
+    fail StandardError.new('Invalid S3 credentials provided.') if
+      @aws_access_key_id.nil? &&  @aws_secret_access_key.nil?
   end
  
   # builds the canonical string for signing.
