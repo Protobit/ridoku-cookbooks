@@ -60,6 +60,7 @@ define :opsworks_deploy do
       environment deploy[:environment].to_hash
       symlink_before_migrate( deploy[:symlink_before_migrate] )
       action deploy[:action]
+      provider Chef::Provider::Deploy::Revision
 
       ENV.delete('BUNDLE_GEMFILE')
 

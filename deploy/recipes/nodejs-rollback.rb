@@ -5,6 +5,7 @@ node[:deploy].each do |application, deploy|
   end
 
   deploy deploy[:deploy_to] do
+    provider Chef::Provider::Deploy::Revision
     user deploy[:user]
     action 'rollback'
     restart_command "sleep #{deploy[:sleep_before_restart]} && #{deploy[:restart_command]}"

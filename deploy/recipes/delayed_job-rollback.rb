@@ -18,6 +18,7 @@ node[:deploy].each do |application, deploy|
   services = "#{application}-#{deploy[:rails_env]}"
 
   deploy deploy[:deploy_to] do
+    provider Chef::Provider::Deploy::Revision
     user deploy[:user]
     environment "RAILS_ENV" => deploy[:rails_env], "RUBYOPT" => ""
     action "rollback"
