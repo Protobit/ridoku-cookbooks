@@ -26,18 +26,26 @@
 #   bucket: "database-backups"
 # }
 
-node[:postgresql][:databases].each do |dbase|
-  if node.key?(:backup) && node[:backup][:databases].include?(dbase[:app])
-    pg_database_backup dbase[:app] do
-      file node[:backup][:dump]
-      database dbase[:database]
-      
-      action :capture
+if node[:opsworks][:instance][:layers].include?('postgres')
+  node[:postgresql][:databases].each do |dbase|
+    Chef::Log.warn("Namespace 'backup' does not exist!") unless
+      node.key?(:backup)
 
-      if node.key?(:postgresql)
-        s3_key node[:postgresql][:s3_key]
-        s3_secret node[:postgresql][:s3_secret]
+    if node.key?(:backup) && node[:backup][:databases].include?(dbase[:app])
+      Chef::Log.debug("Running pg_database_backup:capture on #{dbase[:app]}")
+      pg_database_backup dbase[:app] do
+        file node[:backup][:dump]
+        database dbase[:database]
+        
+        action :capture
+
+        if node.key?(:postgresql)
+          s3_key node[:postgresql][:s3_key]
+          s3_secret node[:postgresql][:s3_secret]
+        end
       end
+    else
+      Chef::Log.debug("Skipping pg_database_backup:capture on #{dbase[:app]}")
     end
   end
 end
