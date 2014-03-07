@@ -22,8 +22,8 @@
 actions :create, :put
 default_action :create
 
-attribute :access_key_id,    :regex => [ /^([a-z]|[A-Z]|[0-9]|_|-)+$/ ]
-attribute :secret_access_id, :regex => [ /^([a-z]|[A-Z]|[0-9]|_|-)+$/ ]
+attribute :access_key_id,    :regex => [ /^([a-z]|[A-Z]|[0-9]|_|-|\/|\\|\+)+$/ ]
+attribute :secret_access_id, :regex => [ /^([a-z]|[A-Z]|[0-9]|_|-|\/|\\|\+)+$/ ]
 attribute :group,            :regex => [ /^([a-z]|[A-Z]|[0-9]|_|-)+$/, /^\d+$/ ]
 attribute :owner,            :regex => [ /^([a-z]|[A-Z]|[0-9]|_|-)+$/, /^\d+$/ ]
 attribute :mode,             :regex => /^0?\d{3,4}$/
