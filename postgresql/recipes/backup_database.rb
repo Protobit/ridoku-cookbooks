@@ -26,7 +26,7 @@
 #   bucket: "database-backups"
 # }
 
-if node[:opsworks][:instance][:layers].include?('postgres')
+if node[:opsworks][:instance][:layers].include?('postgresql')
   node[:postgresql][:databases].each do |dbase|
     Chef::Log.warn("Namespace 'backup' does not exist!") unless
       node.key?(:backup)
@@ -48,4 +48,6 @@ if node[:opsworks][:instance][:layers].include?('postgres')
       Chef::Log.debug("Skipping pg_database_backup:capture on #{dbase[:app]}")
     end
   end
+else
+  Chef::Log.debug("Skipping pg_database_backup:capture on #{node[:opsworks][:instance][:hostname]}")
 end
