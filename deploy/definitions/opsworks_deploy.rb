@@ -12,37 +12,9 @@ define :opsworks_deploy do
 
   package 'libpq-dev'
 
-  if deploy[:scm]
-    ensure_scm_package_installed(deploy[:scm][:scm_type])
-
-    prepare_git_checkouts(
-      :user => deploy[:user],
-      :group => deploy[:group],
-      :home => deploy[:home],
-      :ssh_key => deploy[:scm][:ssh_key]
-    ) if deploy[:scm][:scm_type].to_s == 'git'
-
-    prepare_svn_checkouts(
-      :user => deploy[:user],
-      :group => deploy[:group],
-      :home => deploy[:home],
-      :deploy => deploy,
-      :application => application
-    ) if deploy[:scm][:scm_type].to_s == 'svn'
-
-    if deploy[:scm][:scm_type].to_s == 'archive'
-      repository = prepare_archive_checkouts(deploy[:scm])
-      node.set[:deploy][application][:scm] = {
-        :scm_type => 'git',
-        :repository => repository
-      }
-    elsif deploy[:scm][:scm_type].to_s == 's3'
-      repository = prepare_s3_checkouts(deploy[:scm])
-      node.set[:deploy][application][:scm] = {
-        :scm_type => 'git',
-        :repository => repository
-      }
-    end
+  prepare_checkouts do
+    app application
+    deploy_data deploy
   end
 
   deploy = node[:deploy][application]
@@ -51,6 +23,7 @@ define :opsworks_deploy do
   if deploy[:scm] && deploy[:scm][:scm_type] != 'other'
     Chef::Log.debug("Checking out source code of application #{application} with type #{deploy[:application_type]}")
     deploy deploy[:deploy_to] do
+      provider Chef::Provider::Deploy::Revision
       repository deploy[:scm][:repository]
       user deploy[:user]
       group deploy[:group]
@@ -60,7 +33,6 @@ define :opsworks_deploy do
       environment deploy[:environment].to_hash
       symlink_before_migrate( deploy[:symlink_before_migrate] )
       action deploy[:action]
-      provider Chef::Provider::Deploy::Revision
 
       ENV.delete('BUNDLE_GEMFILE')
 
