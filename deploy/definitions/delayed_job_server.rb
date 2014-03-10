@@ -57,7 +57,7 @@ define :delayed_job_server do
       service "#{services} Worker" do
         service_name services
         supports :start => true, :stop => true, :zap => true, :restart => true
-        action [:enable, :restart]
+        action [:enable]
       end
 
       # Add application cron job.

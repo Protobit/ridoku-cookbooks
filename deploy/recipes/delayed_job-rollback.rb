@@ -11,6 +11,11 @@ node[:deploy].each do |application, deploy|
 
   services = "#{application}-#{deploy[:rails_env]}"
 
+  delayed_job_server do
+    app application
+    deploy_data deploy
+  end
+
   if deploy[:application_type] == 'rails' && node[:opsworks][:instance][:layers].include?('rails-app')
     if deploy['work_from_app_server']
       # Provided this is run AFTER deploy::rails-rollback (which it should be)
@@ -37,7 +42,6 @@ node[:deploy].each do |application, deploy|
 
         environment "RAILS_ENV" => deploy[:rails_env], "RUBYOPT" => ""
         action "rollback"
-        restart_command "sleep #{deploy[:sleep_before_restart]} && service #{services} restart"
 
         case deploy[:scm][:scm_type].to_s
         when 'git'
@@ -59,6 +63,8 @@ node[:deploy].each do |application, deploy|
         only_if do
           File.exists?(deploy[:current_path])
         end
+
+        notifies :restart, "service[#{services} Worker]", :immediately
       end
     end
   end
