@@ -14,11 +14,6 @@ node[:deploy].each do |application, deploy|
     end
   end
 
-  prepare_checkouts do
-    app application
-    deploy_data deploy
-  end
-
   deploy deploy[:deploy_to] do
     provider Chef::Provider::Deploy::Revision
     repository deploy[:scm][:repository]
