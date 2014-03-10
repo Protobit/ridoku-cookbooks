@@ -64,6 +64,7 @@ case "$1" in
   ;;
   restart)
     stop_dj_server || zap_dj_server
+    sleep 5
     start_dj_server
     exit $?
   ;;

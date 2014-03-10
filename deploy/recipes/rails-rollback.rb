@@ -7,6 +7,13 @@ node[:deploy].each do |application, deploy|
 
   services = "#{application}-#{deploy[:rails_env]}"
 
+  if deploy['work_from_app_server']
+    delayed_job_server do
+      deploy_data deploy
+      app application
+    end
+  end
+
   deploy deploy[:deploy_to] do
     provider Chef::Provider::Deploy::Revision
     user deploy[:user]
@@ -17,7 +24,9 @@ node[:deploy].each do |application, deploy|
     only_if do
       File.exists?(deploy[:current_path])
     end
-    
-    notifies :restart, "#{services} Worker", :immediately
+
+    if deploy['work_from_app_server']
+      notifies :restart, "service[#{services} Worker]", :immediately
+    end
   end
 end

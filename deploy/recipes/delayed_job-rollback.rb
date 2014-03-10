@@ -22,7 +22,7 @@ node[:deploy].each do |application, deploy|
     user deploy[:user]
     environment "RAILS_ENV" => deploy[:rails_env], "RUBYOPT" => ""
     action "rollback"
-    restart_command "sleep #{deploy[:sleep_before_restart]} && service #{service} restart"
+    restart_command "sleep #{deploy[:sleep_before_restart]} && service #{services} restart"
 
     only_if do
       File.exists?(deploy[:current_path])
