@@ -74,6 +74,7 @@ define :opsworks_deploy do
           )
           
           deploy_environment do
+            app_path "#{release_path}"
             deploy_data deploy
             app application
           end

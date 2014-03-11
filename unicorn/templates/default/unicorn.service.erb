@@ -1,7 +1,7 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/ruby
 
+require 'etc'
 require 'digest/md5'
-require '<%= @deploy[:deploy_to] %>/shared/config/environment.rb'
 
 ROOT_PATH="<%= @deploy[:deploy_to] %>"
 APP_NAME="<%= @application %>"
@@ -37,13 +37,12 @@ def different_gemfile?
 end
 
 def start_unicorn
-  env_string = generate_env_string
   if File.exists?("#{ROOT_PATH}/current/Gemfile")
     puts "OpsWorks: Gemfile detected - running Unicorn with bundle exec"
-    run_and_print_command "cd #{ROOT_PATH}/current && #{env_string} /usr/local/bin/ruby /usr/local/bin/bundle exec unicorn_rails --env <%= @deploy[:rails_env] %> --daemonize -c #{ROOT_PATH}/shared/config/unicorn.conf"
+    run_and_ignore_exitcode_and_print_command "cd #{ROOT_PATH}/current && /usr/local/bin/ruby /usr/local/bin/bundle exec unicorn_rails --env <%= @deploy[:rails_env] %> --daemonize -c #{ROOT_PATH}/shared/config/unicorn.conf"
   else
     puts "OpsWorks: no Gemfile detected - running plain Unicorn"
-    run_and_print_command "cd #{ROOT_PATH}/current && #{env_string} unicorn_rails --env <%= @deploy[:rails_env] %> --daemonize -c #{ROOT_PATH}/shared/config/unicorn.conf"
+    run_and_ignore_exitcode_and_print_command "cd #{ROOT_PATH}/current && unicorn_rails --env <%= @deploy[:rails_env] %> --daemonize -c #{ROOT_PATH}/shared/config/unicorn.conf"
   end
 end
 
@@ -58,11 +57,11 @@ def stop_unicorn
 end
 
 def restart_unicorn
-	if unicorn_running?
-		run_and_ignore_exitcode_and_print_command "kill -USR2 `cat #{PID_PATH}`"
-	else
-		start_unicorn
-	end
+  if unicorn_running?
+    run_and_ignore_exitcode_and_print_command "kill -USR2 `cat #{PID_PATH}`"
+  else
+    start_unicorn
+  end
 end
 
 def clean_restart
@@ -77,14 +76,17 @@ def clean_restart
 end
 
 def status_unicorn
-	if pid = unicorn_running?
-		puts "Unicorn <%= @application %> running with PID #{pid}"
-		return true
-	else
-		puts "Unicorn <%= @application %> not running"
-		return false
+  if pid = unicorn_running?
+    puts "Unicorn <%= @application %> running with PID #{pid}"
+    return true
+  else
+    puts "Unicorn <%= @application %> not running"
+    return false
   end
 end
+
+Process::Sys.setuid(uid = Etc.getpwnam("<%= @deploy[:user] %>").uid)
+puts "Set Unicorn process UID to #{uid}"
 
 case ARGV[0]
 when "start"

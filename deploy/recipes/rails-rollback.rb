@@ -24,23 +24,6 @@ node[:deploy].each do |application, deploy|
     action "rollback"
     restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
 
-    case deploy[:scm][:scm_type].to_s
-    when 'git'
-      scm_provider :git
-      enable_submodules deploy[:enable_submodules]
-      shallow_clone deploy[:shallow_clone]
-    when 'svn'
-      scm_provider :subversion
-      svn_username deploy[:scm][:user]
-      svn_password deploy[:scm][:password]
-      svn_arguments "--no-auth-cache --non-interactive --trust-server-cert"
-      svn_info_args "--no-auth-cache --non-interactive --trust-server-cert"
-    when 'symlink'
-      Chef::Log.info('Repository type is symlink. Do nothing.')
-    else
-      raise "unsupported SCM type #{deploy[:scm][:scm_type].inspect}"
-    end
-
     only_if do
       File.exists?(deploy[:current_path])
     end
