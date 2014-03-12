@@ -5,7 +5,7 @@ define :deploy_environment do
 
   if deploy[:application_type] == 'rails'
 
-    template "#{path}/config/initializers/environment.rb" do
+    template "#{path}/shared/config/environment.rb" do
       source 'environment.rb.erb'
       mode '0600'
       group deploy[:group]
@@ -13,8 +13,8 @@ define :deploy_environment do
       variables(:app_env => deploy[:app_env])
 
       only_if do
-        File.exists?("#{deploy[:deploy_to]}") &&
-        File.exists?("#{deploy[:deploy_to]}/shared/config/")
+        File.exists?(path) &&
+        File.exists?("#{path}/shared/config/")
       end
     end
 

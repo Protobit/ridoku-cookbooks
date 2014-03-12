@@ -19,14 +19,21 @@
 define :precompile_assets do
   application = params[:app]
   deploy = params[:deploy_data]
+  rel_path = params[:name]
+
+  unless deploy[:application_type] == 'rails'
+    Chef::Log.info('Skipping :precompile_assets. App is not a Rails.')
+    return
+  end
+
 
   # Hack for now...
-  dir = Dir["#{deploy[:deploy_to]}/releases/*"]
-  app_path = dir.sort[dir.size-1]
+  # dir = Dir["#{deploy[:deploy_to]}/releases/*"]
+  # rel_path = dir.sort[dir.size-1]
 
-  is_master = OpsWorks::RailsConfiguration.is_master?(application, node)
-  master_is_online = OpsWorks::RailsConfiguration.is_master_online?(application, node)
-  asset = OpsWorks::RailsConfiguration.manifest_info(application, node)
+  # is_master = OpsWorks::RailsConfiguration.is_master?(application, node)
+  # master_is_online = OpsWorks::RailsConfiguration.is_master_online?(application, node)
+  # asset = OpsWorks::RailsConfiguration.manifest_info(application, node)
   env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
   
   # TODO explore more into asset how best to do this.
@@ -45,19 +52,21 @@ define :precompile_assets do
   # end
 
   execute 'precompile assets' do
-    if File.exists?("#{app_path}/Gemfile")
+    if File.exists?("#{rel_path}/Gemfile")
       exec = '/usr/local/bin/ruby /usr/local/bin/bundle exec'
     end
 
     command ['sudo su deploy',
-      "-c 'cd #{app_path} && #{env} #{exec} rake assets:precompile'"].join(' ')
+      "-c 'cd #{rel_path} && env && ",
+      "#{env} #{exec} rake assets:precompile --trace'"].join(' ')
 
     # only_if do
     #   precompile
     # end
-  end
+    action :nothing
+  end.run_action(:run)
 
-  # assets_path = "#{app_path}/#{deploy[:document_root]}/assets/"
+  # assets_path = "#{rel_path}/#{deploy[:document_root]}/assets/"
   # manifest = "#{assets_path}/manifest.yml"
 
   # if asset && master_manifest
