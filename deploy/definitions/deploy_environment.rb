@@ -1,9 +1,10 @@
 define :deploy_environment do
   application = params[:app]
   deploy = params[:deploy_data]
-  path = params[:app_path]
+  path = params[:name]
 
   if deploy[:application_type] == 'rails'
+    Chef::Log.info("Creating environments for #{path}")
 
     template "#{path}/shared/config/environment.rb" do
       source 'environment.rb.erb'

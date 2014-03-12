@@ -2,8 +2,8 @@
 
 node[:deploy].each do |application, deploy|
   rails_server do
-    application application
-    deploy deploy
+    app application
+    deploy_data deploy
   end
 end
 

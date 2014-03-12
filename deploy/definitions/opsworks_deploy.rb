@@ -79,8 +79,7 @@ define :opsworks_deploy do
             :consult_gemfile => node[:deploy][application][:auto_bundle_on_deploy]
           )
           
-          deploy_environment do
-            app_path "#{release_path}"
+          deploy_environment release_path do
             deploy_data deploy
             app application
           end

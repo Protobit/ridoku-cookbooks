@@ -2,9 +2,6 @@ class Chef
   class Provider
     class Deploy
       class Revision
-        # required since we are just monkey patching the class.
-        alias_method :super_rc, :release_created
-
         # if the first release fails, then we'll default to file system.
         # We should avoid falling back to filesystem unless we know for a fact
         # we have released before.
@@ -22,7 +19,7 @@ class Chef
         def release_created(release_path)
           return unless ::File.exists?(@new_resource.current_path)
           release = ::File.readlink(@new_resource.current_path)
-          super_rc(release_path) if release_path == release
+          sorted_releases {|r| r.delete(release); r << release }
         end
 
         def cleanup!

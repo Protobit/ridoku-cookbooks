@@ -1,8 +1,7 @@
 # Update the environment JSON per service
 
 node[:deploy].each do |application, deploy|
-  deploy_environment do
-    app_path deploy[:current_path]
+  deploy_environment deploy[:deploy_to] do
     deploy_data deploy
     app application
   end
