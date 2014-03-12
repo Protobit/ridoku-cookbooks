@@ -19,12 +19,6 @@ define :opsworks_deploy do
 
   deploy = node[:deploy][application]
 
-  # if the app is using ridoku for environment, make sure to symlink it.
-  if deploy.key?(:app_env) && deploy[:application_type] == 'rails'
-    node.default[:deploy][application][:symlink_before_migrate]['config/initializers/environment.rb'] =
-      "config/environment.rb"
-  end
-
   # setup deployment & checkout
   if deploy[:scm] && deploy[:scm][:scm_type] != 'other'
     Chef::Log.debug("Checking out source code of application #{application} with type #{deploy[:application_type]}")
@@ -78,11 +72,6 @@ define :opsworks_deploy do
             :force => node[:force_database_adapter_detection],
             :consult_gemfile => node[:deploy][application][:auto_bundle_on_deploy]
           )
-          
-          deploy_environment release_path do
-            deploy_data deploy
-            app application
-          end
 
           template "#{node[:deploy][application][:deploy_to]}/shared/config/database.yml" do
             cookbook "rails"

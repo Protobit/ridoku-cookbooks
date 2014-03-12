@@ -52,13 +52,13 @@ define :precompile_assets do
   # end
 
   execute 'precompile assets' do
-    if File.exists?("#{rel_path}/Gemfile")
+    if ::File.exists?("#{rel_path}/Gemfile")
       exec = '/usr/local/bin/ruby /usr/local/bin/bundle exec'
     end
 
     command ['sudo su deploy',
-      "-c 'cd #{rel_path} && env && ",
-      "#{env} #{exec} rake assets:precompile --trace'"].join(' ')
+      "-c 'cd #{rel_path} &&",
+      "env #{env} #{exec} rake assets:precompile --trace'"].join(' ')
 
     # only_if do
     #   precompile

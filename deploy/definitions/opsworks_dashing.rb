@@ -56,6 +56,7 @@ define :opsworks_dashing do
   # setup deployment & checkout
   Chef::Log.debug("Checking out source code of Dashing application #{application}.")
   deploy deploy[:deploy_to] do
+    provider Chef::Provider::Deploy::Revision
     repository deploy[:scm][:repository]
     user deploy[:user]
     group deploy[:group]
@@ -93,7 +94,7 @@ define :opsworks_dashing do
 
         command start_cmd
         only_if do 
-          File.exists?(release_path)
+          ::File.exists?(release_path)
         end
       end
 

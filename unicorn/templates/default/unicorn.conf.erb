@@ -1,3 +1,14 @@
+def reset_environment()
+  ENV['BUNDLE_GEMFILE'] = "<%= @deploy[:deploy_to]%>/current/Gemfile"
+<% if @deploy.key?(:app_env) %>
+  <% @deploy[:app_env].each do |key, value| %>
+  ENV['<%= key %>'] = '<%= value %>'
+  <% end %>
+<% end %>
+end
+
+reset_environment()
+
 worker_processes <%= node[:unicorn][:worker_processes] %>
 
 user "<%= @deploy[:user]%>"
@@ -21,7 +32,7 @@ GC.copy_on_write_friendly = true if GC.respond_to?(:copy_on_write_friendly=)
 # ensure Unicorn doesn't use a stale Gemfile when restarting
 # more info: https://willj.net/2011/08/02/fixing-the-gemfile-not-found-bundlergemfilenotfound-error/
 before_exec do |server|
-  ENV['BUNDLE_GEMFILE'] = "<%= @deploy[:deploy_to]%>/current/Gemfile"
+  reset_environment()
 end
 
 before_fork do |server, worker|
