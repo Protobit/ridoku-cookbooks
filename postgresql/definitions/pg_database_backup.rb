@@ -69,7 +69,7 @@ define :pg_database_backup, :action => :capture do
 
     execute "#{defaults[:name]} Database Restore" do
       user defaults[:user]
-      command "pg_restore -d #{defaults[:database]} #{file}"
+      command "pg_restore -d #{defaults[:database]} -U #{defaults[:user]} #{file}"
     end
   end
 
