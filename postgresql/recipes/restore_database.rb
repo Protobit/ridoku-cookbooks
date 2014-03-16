@@ -37,6 +37,7 @@ if node[:opsworks][:instance][:layers].include?('postgresql')
         file node[:backup][:dump]
         database dbase[:database]
         user dbase[:username]
+        force node['backup']['force']
         
         action :restore
 

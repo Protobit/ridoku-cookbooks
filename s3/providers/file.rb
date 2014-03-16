@@ -70,7 +70,7 @@ def upload_to_s3()
     Chef::Log.debug("Request: https://#{host}#{path}")
     Chef::Log.debug("Response: #{response.body}")
     Chef::Log.debug("https://#{host}#{path}")
-    fail StandardError.new("S3 Request Failed: #{response.code} "\
+    Chef::Application.fatal!("S3 Request Failed: #{response.code} "\
         "#{response.message}") if response.code != '200'
   ensure
     file.close
@@ -88,6 +88,8 @@ action :create do
 
   Chef::Log.debug("Resource Name: #{@new_resource.name}")
   fetch_from_s3(@new_resource.source) {}
+
+  FileUtils.chown(@new_resource.owner, @new_resource.group, @new_resource.name)
 
   @new_resource.updated
 end

@@ -36,6 +36,7 @@ if node[:opsworks][:instance][:layers].include?('postgresql')
       pg_database_backup dbase[:app] do
         file node[:backup][:dump]
         database dbase[:database]
+        user dbase[:username]
         
         action :capture
 

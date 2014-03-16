@@ -18,6 +18,7 @@
 #
 
 default['postgresql']['enable_pgdg_apt'] = false
+default['backup']['force'] = false
 
 case node['platform']
 when "debian"
@@ -57,7 +58,7 @@ when "ubuntu"
   default['postgresql']['dir'] = "/etc/postgresql/#{node['postgresql']['version']}/main"
   default['postgresql']['server']['service_name'] = "postgresql"
 
-  default['postgresql']['client']['packages'] = %w{postgresql-client libpq-dev}
+  default['postgresql']['client']['packages'] = ["postgresql-client-#{node['postgresql']['version']}", 'libpq-dev']
   default['postgresql']['server']['packages'] = ["postgresql-#{node['postgresql']['version']}"]
   default['postgresql']['contrib']['packages'] = %w{postgresql-contrib}
 
@@ -131,7 +132,7 @@ end
 
 
 # Set the locale
-default['postgresql']['encoding'] = 'utf8'
+default['postgresql']['encoding'] = 'UTF8'
 default['postgresql']['locale'] = 'en_US.UTF-8'
 
 # These defaults have disparity between which postgresql configuration

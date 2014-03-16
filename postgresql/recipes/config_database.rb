@@ -7,22 +7,29 @@ directory node['postgresql']['config']['data_directory'] do
   action :create
 end
 
-case node['platform_family']
-when "debian"
-  init_db_command =
-    ["/usr/lib/postgresql/#{node['postgresql']['version']}/bin/initdb",
-    "-D #{node['postgresql']['config']['data_directory']}"].join(' ')
 
-  execute 'create new cluster' do
-    user 'postgres'
-    command init_db_command
+unless ::File.exists?("#{node['postgresql']['config']['data_directory']}/PG_VERSION")
 
-    not_if do
-      File.exists?("#{node['postgresql']['config']['data_directory']}/PG_VERSION")
-    end
+  service 'postgresql' do
+    action :stop
   end
-else
-  Chef::Application.fatal!('Invalid platform family! (ubuntu only).')
+
+  case node['platform_family']
+  when "debian"
+    init_db_command =
+      ["/usr/lib/postgresql/#{node['postgresql']['version']}/bin/initdb",
+      "-D #{node['postgresql']['config']['data_directory']}",
+      "-E #{node['postgresql']['encoding']}"].join(' ')
+
+    execute 'create new cluster' do
+      user 'postgres'
+      command init_db_command
+    end
+  else
+    Chef::Application.fatal!('Invalid platform family! (ubuntu only).')
+  end
+
+  node.override['postgresql']['restart'] = true
 end
 
 node.default['postgresql']['config_pgtune']['db_type'] = 'web'
@@ -67,10 +74,11 @@ node['postgresql']['databases'].each do |db|
   end
 end
 
-# We don't want to restart the postgresql server, so ensure its started prior
-# to reloading.
-service "postgresql" do
-  action :start
+template "#{node['postgresql']['dir']}/pg_hba.conf" do
+  source "pg_hba.conf.erb"
+  owner "postgres"
+  group "postgres"
+  mode 0600
 end
 
 # Set node['postgresql']['restart'] to TRUE if a configuration element that
@@ -80,21 +88,14 @@ template "#{node['postgresql']['dir']}/postgresql.conf" do
   owner "postgres"
   group "postgres"
   mode 0600
-
-  if node['postgresql']['restart']
-    notifies :restart, 'service[postgresql]'
-  else
-    notifies :reload, 'service[postgresql]'
-  end
 end
 
-template "#{node['postgresql']['dir']}/pg_hba.conf" do
-  source "pg_hba.conf.erb"
-  owner "postgres"
-  group "postgres"
-  mode 0600
-
-  notifies :reload, 'service[postgresql]'
+service 'postgresql' do 
+  if node['postgresql']['restart']
+    action :restart
+  else
+    action :reload
+  end
 end
 
 directory '/etc/rid-workers' do
@@ -127,4 +128,5 @@ echo "ALTER ROLE postgres ENCRYPTED PASSWORD '#{node['postgresql']['password']['
   action :run
 end
 
+include_recipe 'postgresql::create_users'
 include_recipe 'postgresql::create_databases'
