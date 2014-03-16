@@ -1,4 +1,4 @@
-default[:opsworks][:rails_stack][:name] = "apache_passenger"
+default[:opsworks][:rails_stack][:name] = "nginx_unicorn"
 case node[:opsworks][:rails_stack][:name]
 when "apache_passenger"
   default[:opsworks][:rails_stack][:recipe] = "passenger_apache2::rails"
