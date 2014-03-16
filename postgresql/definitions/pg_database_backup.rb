@@ -30,7 +30,8 @@ define :pg_database_backup, :action => :capture do
 
     execute "#{defaults[:name]} Database Dump" do
       user defaults[:user]
-      command "pg_dump -Fc #{defaults[:database]} > #{file}"
+      command "pg_dump -Fc #{defaults[:database]} "\
+        "--port=#{node[:postgresql][:config][:port]} > #{file}"
     end
 
     if destination_file[:type] == 's3'
@@ -71,7 +72,8 @@ define :pg_database_backup, :action => :capture do
 
       options = [
         "--dbname=#{defaults[:database]}",
-        "--clean"
+        "--clean",
+        "--port=#{node[:postgresql][:config][:port]}"
       ]
 
       options << '--single-transaction' unless defaults[:force]
