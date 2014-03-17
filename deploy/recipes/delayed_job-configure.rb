@@ -12,10 +12,10 @@ node[:deploy].each do |application, deploy|
   end
 
   services = "#{application}-#{deploy[:app_env][:RAILS_ENV]}"
-  service "#{services} Worker" do
-    service_name services
-    supports :start => true, :stop => true, :zap => true, :restart => true
-    action [:enable]
+  
+  delayed_job_server do
+    deploy_data deploy
+    app application
   end
 
   if deploy['work_from_app_server'] &&

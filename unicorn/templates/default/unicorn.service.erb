@@ -75,6 +75,11 @@ def clean_restart
   end
 end
 
+def force_restart
+  stop_unicorn if unicorn_running?
+  start_unicorn
+end
+
 def status_unicorn
   if pid = unicorn_running?
     puts "Unicorn <%= @application %> running with PID #{pid}"
@@ -101,6 +106,8 @@ when "restart"
   restart_unicorn
 when "clean-restart"
   clean_restart
+when "force-restart"
+  force_restart
 else
   puts "Usage: {start|stop|status|restart|clean-restart}"
   exit 1
