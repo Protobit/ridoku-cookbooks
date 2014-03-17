@@ -12,9 +12,17 @@ node[:deploy].each do |application, deploy|
   end
 
   if deploy['work_from_app_server']
-    Chef::Log.info("Skipping deploy::delayed_job, #{application} "\
-        "application requests workers run along-side web server!")
-    next
+    if !node[:opsworks][:instance][:layers].include?('rails-app')
+      Chef::Log.info("Skipping deploy::delayed_job, #{application} "\
+          "application requests workers run along-side web server!")
+      next
+    end
+  else
+    if node[:opsworks][:instance][:layers].include?('rails-app')
+      Chef::Log.info("Skipping deploy::delayed_job, #{application} "\
+          "application requests workers on worker server!")
+      next
+    end
   end
 
   Chef::Log.info("Running deploy::delayed_job for #{application}...")
