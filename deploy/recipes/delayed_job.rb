@@ -40,7 +40,7 @@ node[:deploy].each do |application, deploy|
     app application
   end
 
-  services = "#{application}-#{deploy[:rails_env]}"
+  services = "#{application}-#{deploy[:rails_env]} Worker"
   service services do
     action :restart
   end

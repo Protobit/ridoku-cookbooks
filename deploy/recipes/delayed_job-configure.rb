@@ -12,8 +12,10 @@ node[:deploy].each do |application, deploy|
   end
 
   services = "#{application}-#{deploy[:app_env][:RAILS_ENV]}"
-  service services do
-    action :enable
+  service "#{services} Worker" do
+    service_name services
+    supports :start => true, :stop => true, :zap => true, :restart => true
+    action [:enable]
   end
 
   if deploy['work_from_app_server'] &&
@@ -41,7 +43,7 @@ node[:deploy].each do |application, deploy|
     owner deploy[:user]
     variables(:database => deploy[:database], :environment => deploy[:app_env][:RAILS_ENV])
 
-    notifies :restart, "service[#{services}]"
+    notifies :restart, "service[#{services} Worker]"
 
     only_if do
       File.exists?("#{deploy[:deploy_to]}") && File.exists?("#{deploy[:deploy_to]}/shared/config/")
@@ -59,7 +61,7 @@ node[:deploy].each do |application, deploy|
       :environment => deploy[:rails_env]
     )
 
-    notifies :restart, "service[#{services}]"
+    notifies :restart, "service[#{services} Worker]"
 
     only_if do
       File.exists?("#{deploy[:deploy_to]}") && File.exists?("#{deploy[:deploy_to]}/shared/config/")
