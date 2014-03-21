@@ -28,7 +28,8 @@ end
 def different_gemfile?
   if File.exists?("#{ROOT_PATH}/current/Gemfile")
     dir = Dir["#{ROOT_PATH}/releases/*"]
-    previous_release_path = dir.sort[dir.size-2]
+    dir.sort! { |a,b| File.stat(a).mtime <=> File.stat(b).mtime }
+    previous_release_path = dir[dir.size-2]
     if !previous_release_path.nil? && File.exists?("#{previous_release_path}/Gemfile")
       return Digest::MD5.hexdigest(File.read("#{ROOT_PATH}/current/Gemfile")) != Digest::MD5.hexdigest(File.read("#{previous_release_path}/Gemfile"))
     end
@@ -109,7 +110,7 @@ when "clean-restart"
 when "force-restart"
   force_restart
 else
-  puts "Usage: {start|stop|status|restart|clean-restart}"
+  puts "Usage: {start|stop|status|restart|force-restart|clean-restart}"
   exit 1
 end
 

@@ -36,8 +36,10 @@ define :opsworks_deploy do
 
       ENV.delete('BUNDLE_GEMFILE')
 
-      if deploy[:application_type] == 'rails' && node[:opsworks][:instance][:layers].include?('rails-app')
-        restart_command "sleep #{deploy[:sleep_before_restart]} && #{node[:opsworks][:rails_stack][:restart_command]}"
+      # schedule the restart so commands run later don't have to restart again.
+      if deploy[:application_type] == 'rails' &&
+        node[:opsworks][:instance][:layers].include?('rails-app')
+        notifies :reload, "service[unicorn_#{application}]"
       end
 
       case deploy[:scm][:scm_type].to_s
