@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # define variables that are required
-: ${SERVICE_PATH:='<%= @current_path %>'}
+: ${SERVICE_PATH:='<%= @deploy[:current_path] %>'}
 : ${SERVICE_ENV:="<%= @environment %>"}
 : ${SERVICE_QUEUE:='<%= @queues %>'}
 : ${SERVICE_QUEUE_COUNT:='<%= @queue_count %>'}
-: ${SERVICE_USER:='<%= @user %>'}
-: ${SERVICE_GROUP:='<%= @group %>'}
+: ${SERVICE_USER:='<%= @deploy[:user] %>'}
+: ${SERVICE_GROUP:='<%= @deploy[:group] %>'}
 : ${RUBY_PATH:='/usr/local/bin/'}
 
 SERVICE_LOG=${SERVICE_PATH}/log/sneakers.log
@@ -16,8 +16,8 @@ touch ${SERVICE_LOG}
 chown ${SERVICE_USER}:${SERVICE_GROUP} ${SERVICE_LOG}
 
 start_sneakers_server() {
-  echo -n "Starting delayed_job:"
-  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec rails runner <% @deploy[:deploy_to] %>/shared/scripts/sneaker.rb" >> ${SERVICE_LOG} 2>&1
+  echo -n "Starting sneakers: "
+  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec rails runner <%= @deploy[:deploy_to] %>/shared/scripts/sneakers.rb" >> ${SERVICE_LOG} 2>&1
   res=$?
   if [ $res -eq 0 ]; then
     echo "done."
@@ -28,8 +28,8 @@ start_sneakers_server() {
 }
 
 stop_sneakers_server() {
-  echo -n "Stopping delayed_job: "
-  su - ${SERVICE_USER} -c "kill -QUIT `cat <% @deploy[:deploy_to] %>/shared/pids/sneakers.pid`" >> ${SERVICE_LOG} 2>&1
+  echo -n "Stopping sneakers: "
+  su - ${SERVICE_USER} -c "kill -QUIT `cat <%= @deploy[:deploy_to] %>/shared/pids/sneakers.pid`" >> ${SERVICE_LOG} 2>&1
   res=$?
   if [ $res -eq 0 ]; then
     echo "done."
@@ -40,10 +40,10 @@ stop_sneakers_server() {
 }
 
 zap_sneakers_server() {
-  echo -n "Zapping delayed_job: "
+  echo -n "Zapping sneakers: "
   ${set_path}
 
-  for f in tmp/pids/delayed_job.*; do
+  for f in tmp/pids/sneakers.*; do
     kill -9 $(cat $f) >> ${SERVICE_LOG} 2>&1
     rm -f $f
   done
@@ -53,6 +53,27 @@ zap_sneakers_server() {
   return 0
 }
 
+status_sneakers_server() {
+  echo -n "Status of sneakers: "
+  ${set_path}
+
+  if [ -e tmp/pids/sneakers.pid ]; then
+    test -e /proc/$(cat tmp/pids/sneakers.pid)
+    ret=$?
+  else
+    ret=1
+  fi
+
+  if [ $ret -eq 0 ]; then
+    echo "running"
+  else
+    echo "not running"
+  fi
+
+  cd - &> /dev/null
+  return $ret
+}
+
 case "$1" in
   start)
     start_sneakers_server
@@ -60,6 +81,10 @@ case "$1" in
   ;;
   stop)
     stop_sneakers_server
+    exit $?
+  ;;
+  status)
+    status_sneakers_server
     exit $?
   ;;
   restart)

@@ -27,9 +27,5 @@ node[:deploy].each do |application, deploy|
     only_if do
       File.exists?(deploy[:current_path])
     end
-
-    if deploy['work_from_app_server']
-      notifies :restart, "service[#{services} Worker]", :immediately
-    end
   end
 end

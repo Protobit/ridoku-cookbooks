@@ -33,15 +33,10 @@ def load_worker_class(work)
 
   worker || work.constantize
 rescue NameError
-  $stderr.puts 'Please ensure that your workers are placed in '\
-    '\'app/workers\' and ensure that the filenames match the Rails file '\
-    'naming conventions.'
-  $stderr.puts 'e.g., WORKER=Workers::MyWorker should be in '\
-    '\'app/workers/my_worker.rb\''
-  exit 1
+  print_constant_error
 end
 
-workers = "<%= @workers.join(',') %>".split(',')
+workers = "<%= @workers %>".split(',')
 worker_instances = []
 
 workers.each do |work|
@@ -52,9 +47,11 @@ end
 opts = {
   pid_path: '<%= @deploy[:deploy_to] %>/shared/pids/sneakers.pid',
   log: '<%= @deploy[:deploy_to] %>/shared/log/sneakers.log',
-  amqp: "#{ENV['AMQP_URL']}/#{ENV['RAILS_ENV']}",
-  workers: 2,
-  daemonize: 5
+  amqp: ENV['AMQP_URL'],
+  vhost: ENV['RAILS_ENV'],
+  exchange: ENV['AMQP_EXCHANGE'] || 'amqp.<%= @application %>',
+  workers: workers.length,
+  daemonize: 5,
   before_fork: Proc.new do
     # as there's no need for the master process to hold a connection
     # if defined?(ActiveRecord::Base)
