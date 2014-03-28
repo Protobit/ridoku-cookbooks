@@ -7,22 +7,18 @@ if node[:opsworks][:instance][:layers].include?('workers') ||
   node[:opsworks][:instance][:layers].include?('rails-app')
   node[:deploy].each do |application, deploy|
 
-    if deploy[:application_type] != 'rails' ||
-      !deploy.has_key?('workers') ||
-      !deploy['workers'].has_key?('sneakers') ||
-      deploy['workers']['sneakers'].length == 0
+    workers = {}.tap do |worker|
+      (deploy['workers'] || {}).each do |type, value|
+        worker[type] = value if type == 'sneakers' &&
+          value.is_a?(Array) && value.length > 0
+      end
+    end
+
+    if deploy[:application_type] != 'rails' || workers['sneakers'].nil? ||
+      workers['sneakers'].length == 0
         Chef::Log.info("Skipping workers::sneakers-rollback, #{application} "\
           "application does not appear to have any delayed job queues!")
       next
-    end
-
-    # pull out supported worker information
-    supported_workers = node[:workers][:supported_workers]
-    workers = {}.tap do |worker|
-      (deploy['workers'] || {}).each do |type, value|
-        worker[type] = value if supported_workers.include?(type) &&
-          value.is_a?(Array) && value.length > 0
-      end
     end
 
     sneakers_server do
