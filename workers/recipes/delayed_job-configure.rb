@@ -11,7 +11,7 @@ node[:deploy].each do |application, deploy|
   end
 
   if deploy[:application_type] != 'rails' || workers.length == 0
-      Chef::Log.info("Skipping deploy::delayed_job-configure, #{application} "\
+      Chef::Log.info("Skipping workers::delayed_job-configure, #{application} "\
         "application does not appear to have any delayed job queues!")
     next
   end
