@@ -1,29 +1,31 @@
 # encoding: utf-8
 
 node[:deploy].each do |application, deploy|
+  rails_app_instance = node[:opsworks][:instance][:layers].include?('rails-app')
 
-  if deploy[:application_type] != 'rails' ||
-    !deploy.has_key?('workers') ||
-    !deploy['workers'].has_key?('delayed_job') ||
-    deploy['workers']['delayed_job'].length == 0
-      Chef::Log.info("Skipping deploy::delayed_job-configure, #{application} "\
+  workers = {}.tap do |worker|
+    (deploy['workers'] || {}).each do |type, value|
+      worker[type] = value if type == 'sneakers' &&
+        value.is_a?(Array) && value.length > 0
+    end
+  end
+
+  if deploy[:application_type] != 'rails' || workers.length == 0
+      Chef::Log.info("Skipping deploy::sneakers-configure, #{application} "\
         "application does not appear to have any delayed job queues!")
     next
   end
-
-  services = "#{application}-#{deploy[:app_env][:RAILS_ENV]}"
   
-  delayed_job_server do
-    deploy_data deploy
-    app application
+  if deploy['work_from_app_server'] && rails_app_instance
+    next
   end
 
-  if deploy['work_from_app_server'] &&
-    node[:opsworks][:instance][:layers].include?('rails-app')
-    service services do
-      action :restart
-    end
-    next
+  services = "#{application}-#{deploy[:app_env][:RAILS_ENV]}-sneakers"
+  
+  sneakers_server do
+    deploy_data deploy
+    app application
+    workers workers
   end
   
   node.default[:deploy][application][:database][:adapter] =
@@ -43,8 +45,6 @@ node[:deploy].each do |application, deploy|
     owner deploy[:user]
     variables(:database => deploy[:database], :environment => deploy[:app_env][:RAILS_ENV])
 
-    notifies :restart, "service[#{services} Worker]"
-
     only_if do
       File.exists?("#{deploy[:deploy_to]}") && File.exists?("#{deploy[:deploy_to]}/shared/config/")
     end
@@ -60,8 +60,6 @@ node[:deploy].each do |application, deploy|
       :memcached => deploy[:memcached] || {},
       :environment => deploy[:rails_env]
     )
-
-    notifies :restart, "service[#{services} Worker]"
 
     only_if do
       File.exists?("#{deploy[:deploy_to]}") && File.exists?("#{deploy[:deploy_to]}/shared/config/")

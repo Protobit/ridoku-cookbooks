@@ -82,7 +82,8 @@ default['rabbitmq']['disabled_plugins'] = []
 # platform specific settings
 case node['platform_family']
 when 'debian'
-  default['rabbitmq']['package'] = "https://www.rabbitmq.com/releases/rabbitmq-server/v#{node['rabbitmq']['version']}/rabbitmq-server_#{node['rabbitmq']['version']}-1_all.deb"
+  default['rabbitmq']['package'] = "https://s3.amazonaws.com/protobit-ubuntu-packages/rabbitmq-server_#{node['rabbitmq']['version']}-1_all.deb"
+  # default['rabbitmq']['package'] = "https://www.rabbitmq.com/releases/rabbitmq-server/v#{node['rabbitmq']['version']}/rabbitmq-server_#{node['rabbitmq']['version']}-1_all.deb"
 when 'rhel', 'fedora'
   default['rabbitmq']['package'] = "https://www.rabbitmq.com/releases/rabbitmq-server/v#{node['rabbitmq']['version']}/rabbitmq-server-#{node['rabbitmq']['version']}-1.noarch.rpm"
 when 'smartos'

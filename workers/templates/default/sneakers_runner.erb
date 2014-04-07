@@ -1,0 +1,73 @@
+#/usr/bin/env ruby rails runner
+
+require 'sneakers'
+require 'sneakers/runner'
+
+def print_constant_error
+  $stderr.puts 'Please ensure that your workers are placed in '\
+    '\'app/workers\' and ensure that the filenames match the Rails file '\
+    'naming conventions.'
+  $stderr.puts 'e.g., WORKER=Workers::MyWorker should be in '\
+    '\'app/workers/my_worker.rb\''
+  exit 1
+end
+
+def load_worker_class(work)
+  path = Rails.root.join('app', work.underscore.gsub(/::/, '/'))
+  worker = nil
+
+  # This is wrong, but it works...
+  begin 
+    worker = Object.const_get(work)
+  rescue NameError
+  end
+
+  unless worker
+    begin
+      require path
+    rescue LoadError => e
+      $stderr.puts e.to_s
+      print_constant_error
+    end
+  end
+
+  worker || work.constantize
+rescue NameError
+  print_constant_error
+end
+
+workers = "<%= @workers %>".split(',')
+worker_instances = []
+
+workers.each do |work|
+  $stdout.puts "Loading worker: #{work}"
+  worker_instances << load_worker_class(work)
+end
+
+opts = {
+  pid_path: '<%= @deploy[:deploy_to] %>/shared/pids/sneakers.pid',
+  log: '<%= @deploy[:deploy_to] %>/shared/log/sneakers.log',
+  amqp: ENV['AMQP_URL'],
+  vhost: ENV['RAILS_ENV'],
+  exchange: ENV['AMQP_EXCHANGE'] || 'amqp.<%= @application %>',
+  workers: workers.length,
+  daemonize: 5,
+  before_fork: Proc.new do
+    # as there's no need for the master process to hold a connection
+    # if defined?(ActiveRecord::Base)
+    #   ActiveRecord::Base.connection.disconnect!
+    # end
+  end,
+  after_fork: Proc.new do
+    if defined?(ActiveRecord::Base)
+      ActiveRecord::Base.establish_connection
+    end
+  end
+}
+
+Sneakers.configure(opts)
+r = Sneakers::Runner.new(worker_instances)
+
+r.run
+
+exit 0

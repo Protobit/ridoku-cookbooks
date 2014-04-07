@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pid_path=<%= @current_path %>/tmp/pids/
+pid_path=<%= @pid_path %>
 app_name=<%= @service %>
 
 function restart_job_server() {
@@ -9,9 +9,9 @@ function restart_job_server() {
   exit $?
 }
 
-ls ${pid_path}/delayed_job.* &> /dev/null || start_job_server
+ls ${pid_path} &> /dev/null || start_job_server
 
-for f in ${pid_path}/delayed_job.*.pid; do
+for f in ${pid_path}; do
   [[ -e /proc/$(cat $f) ]] || restart_job_server
 done
 

@@ -24,5 +24,10 @@ package "nginx"
 include_recipe 'nginx::configure'
 
 service "nginx" do
-  action [ :enable, :start ]
+  if node[:opsworks][:instance][:layers].include?('workers') && 
+    !node[:opsworks][:instance][:layers].include?('rails-app')
+    action [ :enable ]
+  else
+    action [ :enable, :start ]
+  end
 end

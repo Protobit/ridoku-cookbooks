@@ -53,6 +53,32 @@ zap_dj_server() {
   return 0
 }
 
+status_dj_server() {
+  echo -n "Status of delayed_job: "
+  ${set_path}
+
+  if [ -e tmp/pids/delayed_job.0.pid ]; then
+    test -e /proc/$(cat tmp/pids/delayed_job.0.pid)
+    ret=$?
+  else
+    if [ -e tmp/pids/delayed_job.pid ]; then
+      test -e /proc/$(cat tmp/pids/delayed_job.pid)
+      ret=$?
+    else
+      ret=1
+    fi
+  fi
+
+  if [ $ret -eq 0 ]; then
+    echo "running."
+  else
+    echo "not running"
+  fi
+
+  cd - &> /dev/null
+  return $ret
+}
+
 case "$1" in
   start)
     start_dj_server
@@ -60,6 +86,10 @@ case "$1" in
   ;;
   stop)
     stop_dj_server
+    exit $?
+  ;;
+  status)
+    status_dj_server
     exit $?
   ;;
   restart)
