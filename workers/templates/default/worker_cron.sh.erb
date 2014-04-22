@@ -9,7 +9,7 @@ function restart_job_server() {
   exit $?
 }
 
-ls ${pid_path} &> /dev/null || start_job_server
+ls ${pid_path} &> /dev/null || restart_job_server
 
 for f in ${pid_path}; do
   [[ -e /proc/$(cat $f) ]] || restart_job_server
