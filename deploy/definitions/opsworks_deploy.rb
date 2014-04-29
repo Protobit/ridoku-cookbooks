@@ -28,7 +28,13 @@ define :opsworks_deploy do
       user deploy[:user]
       group deploy[:group]
       revision deploy[:scm][:revision]
-      migrate deploy[:migrate]
+
+      if node[:opsworks][:instance][:hostname] == deploy[:assetmaster]
+        migrate deploy[:migrate]
+      else
+        migrate false
+      end
+
       migration_command deploy[:migrate_command]
       environment deploy[:environment].to_hash
       symlink_before_migrate( deploy[:symlink_before_migrate] )
