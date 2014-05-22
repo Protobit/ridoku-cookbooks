@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Ensure the environment is good.
+export BUNDLE_GEMFILE="<%= @deploy[:deploy_to]%>/current/Gemfile"
+<% if @deploy.key?(:app_env) %>
+  <% @deploy[:app_env].keys.sort.each do |key| %>
+export <%= key %>='<%= @deploy[:app_env][key] %>'
+  <% end %>
+<% end %>
+
+bundle exec rails runner <% @script_path %>

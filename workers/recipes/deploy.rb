@@ -64,5 +64,10 @@ if rails_app_instance || workers_instance
       app application
       workers workers
     end
+
+    cron_configuration do
+      deploy_data deploy
+      app application
+    end
   end
 end
