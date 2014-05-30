@@ -5,14 +5,17 @@ define :cron_configuration do
   (deploy[:cron] || []).each do |cron_info|
     next unless cron_info.is_a?(Hash)
 
-    cron_script = ''
+    instances = cron_info[:instance].split(',')
+    next unless instances.include?('*') ||
+      instances.include?(node[:opsworks][:instance][:hostname])
+
+    script_path = File.join(deploy[:current_path], cron_info[:path])
+    base = File.basename(script_path)
+    cron_script = "/etc/rid-workers/#{application}-#{base}"
+    cron_action = :create
 
     case cron_info[:type]
     when 'runner'
-      script_path = File.join(deploy[:current_path], cron_info[:path])
-      base = File.basename(script_path)
-      cron_script = "/etc/rid-workers/#{application}-#{base}"
-
       # Generate the runner script (stores environment)
       template cron_script do
         source 'runner_cron.rb.erb'
@@ -27,9 +30,11 @@ define :cron_configuration do
         }
         action :create
       end
+    when 'delete'
+      cron_action = :delete
     end
 
-    cron "#{File.basename(cron_script).underscore}" do
+    cron File.basename(cron_script).underscore do
       command cron_script
       user deploy[:user]
 
@@ -37,8 +42,8 @@ define :cron_configuration do
         send(key, cron_info[key]) if cron_info.key?(key)
       end
 
-      # Allow for 'delete' operation for old cron scripts.
-      action cron_info.key?(:action) ? cron_info[:action].to_sym || :create
+      # Allow for the delete state.
+      action cron_action
     end
   end
 end
