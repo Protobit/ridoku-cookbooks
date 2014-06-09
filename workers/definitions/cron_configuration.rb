@@ -25,8 +25,8 @@ define :cron_configuration do
         mode 0700
 
         variables {
-          script_path: script_path,
-          deploy: deploy
+          :script_path => script_path,
+          :deploy => deploy
         }
         action :create
       end
