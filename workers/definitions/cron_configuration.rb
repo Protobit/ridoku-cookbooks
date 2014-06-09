@@ -24,10 +24,10 @@ define :cron_configuration do
         group deploy[:group]
         mode 0700
 
-        variables {
+        variables(
           :script_path => script_path,
           :deploy => deploy
-        }
+        )
         action :create
       end
     when 'delete'
