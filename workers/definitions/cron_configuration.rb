@@ -9,16 +9,16 @@ define :cron_configuration do
     next unless instances.include?('*') ||
       instances.include?(node[:opsworks][:instance][:hostname])
 
-    script_path = File.join(deploy[:current_path], cron_info[:path])
+    script_path = cron_info[:path]
     base = File.basename(script_path)
-    cron_script = "/etc/rid-workers/#{application}-#{base}"
+    cron_script = "/etc/rid-workers/#{application}-#{base}.sh"
     cron_action = :create
 
     case cron_info[:type]
     when 'runner'
       # Generate the runner script (stores environment)
       template cron_script do
-        source 'runner_cron.rb.erb'
+        source 'runner_cron.sh.erb'
 
         owner deploy[:user]
         group deploy[:group]
