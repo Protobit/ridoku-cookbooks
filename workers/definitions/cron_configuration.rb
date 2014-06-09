@@ -34,7 +34,7 @@ define :cron_configuration do
       cron_action = :delete
     end
 
-    cron File.basename(cron_script).underscore do
+    cron File.basename(cron_script) do
       command cron_script
       user deploy[:user]
 
