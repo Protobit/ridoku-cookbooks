@@ -35,7 +35,9 @@ define :opsworks_deploy do
         migrate false
       end
 
-      migration_command deploy[:migrate_command]
+
+      env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
+      migration_command "#{env} /usr/local/bin/bundle exec /usr/local/bin/rake db:migrate"
       environment deploy[:environment].to_hash
       symlink_before_migrate( deploy[:symlink_before_migrate] )
       action deploy[:action]
