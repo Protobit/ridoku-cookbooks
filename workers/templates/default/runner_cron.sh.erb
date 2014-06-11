@@ -8,5 +8,7 @@ export <%= key %>='<%= @deploy[:app_env][key] %>'
   <% end %>
 <% end %>
 
+export PATH=/usr/local/bin:${PATH}
+
 cd <%= @deploy[:current_path] %>
 bundle exec rails runner <%= @script_path %>

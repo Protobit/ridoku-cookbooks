@@ -35,7 +35,7 @@ define :cron_configuration do
     end
 
     cron File.basename(cron_script) do
-      command cron_script
+      command "#{cron_script} > /dev/null 2>&1"
       user deploy[:user]
 
       [:day, :hour, :minute, :month, :weekday].each do |key|
