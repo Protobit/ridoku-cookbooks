@@ -57,8 +57,8 @@ define :precompile_assets do
     end
 
     command ['sudo su deploy',
-      "-c 'cd #{rel_path} &&",
-      "env #{env} #{exec} rake assets:precompile --trace'"].join(' ')
+      "-c \"cd #{rel_path} &&",
+      "env #{env} #{exec} rake assets:precompile --trace\""].join(' ')
 
     # only_if do
     #   precompile
