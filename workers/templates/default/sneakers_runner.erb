@@ -48,7 +48,7 @@ opts = {
   pid_path: '<%= @deploy[:deploy_to] %>/shared/pids/sneakers.pid',
   log: '<%= @deploy[:deploy_to] %>/shared/log/sneakers.log',
   amqp: ENV['AMQP_URL'],
-  vhost: ENV['RAILS_ENV'],
+  vhost: ENV['AMQP_VHOST'] || ENV['RAILS_ENV'],
   exchange: ENV['AMQP_EXCHANGE'] || 'amqp.<%= @application %>',
   workers: workers.length,
   daemonize: 5,
