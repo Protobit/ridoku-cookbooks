@@ -23,6 +23,7 @@ define :pg_database_backup, :action => :capture do
   case defaults[:action]
   when :capture
     destination_file = defaults[:file]
+    stack = node[:opsworks][:stack][:name]
 
     if destination_file[:type] == 'file'
       file = destination_file[:file]
@@ -35,7 +36,7 @@ define :pg_database_backup, :action => :capture do
     end
 
     if destination_file[:type] == 's3'
-      s3_file "s3://#{destination_file[:bucket]}/"\
+      s3_file "s3://#{destination_file[:bucket]}/#{stack}/"\
         "#{defaults[:name]}-#{timestamp}.sqd" do
         source file
         access_key_id defaults[:s3_key]
