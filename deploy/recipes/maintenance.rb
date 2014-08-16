@@ -15,9 +15,9 @@ if node[:opsworks][:instance][:layers].include?('rails-app')
 
         case deploy[:maintenance]
         when true, 'on', 'yes', 'true'
-          action = :create
+          action :create
         else
-          action = :delete
+          action :delete
         end
       end
     end
