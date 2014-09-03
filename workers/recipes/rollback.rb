@@ -30,4 +30,5 @@ if node[:opsworks][:instance][:layers].include?('workers') ||
 
   include_recipe 'workers::delayed_job-rollback'
   include_recipe 'workers::sneakers-rollback'
+  include_recipe 'workers::tread_mill-rollback'
 end
