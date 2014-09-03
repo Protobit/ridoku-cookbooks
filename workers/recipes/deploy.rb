@@ -59,6 +59,12 @@ if rails_app_instance || workers_instance
       workers workers
     end
 
+    tread_mill_server do
+      deploy_data deploy
+      app application
+      workers workers
+    end
+
     delayed_job_server do
       deploy_data deploy
       app application
