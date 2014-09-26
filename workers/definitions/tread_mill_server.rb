@@ -1,4 +1,4 @@
-define :sneakers_server do
+define :tread_mill_server do
   application = params[:app]
   deploy = params[:deploy_data]
   workers = params[:workers]
@@ -17,7 +17,7 @@ define :sneakers_server do
     if !tread_mill_info.is_a?(Array) || tread_mill_info.length == 0
       Chef::Log.info("Skipping TreadMill worker for #{application}. "\
         "Not configured.")
-      return
+      next
     end
 
     # Create directory for application cron scripts.
@@ -38,9 +38,7 @@ define :sneakers_server do
 
       variables(
         :deploy => deploy,
-        :environment => env,
-        :queues => sneakers_info.join(','),
-        :queue_count => sneakers_info.length
+        :environment => env
       )
     end
 

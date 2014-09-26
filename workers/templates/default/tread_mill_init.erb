@@ -3,8 +3,6 @@
 # define variables that are required
 : ${SERVICE_PATH:='<%= @deploy[:current_path] %>'}
 : ${SERVICE_ENV:="<%= @environment %>"}
-: ${SERVICE_QUEUE:='<%= @queues %>'}
-: ${SERVICE_QUEUE_COUNT:='<%= @queue_count %>'}
 : ${SERVICE_USER:='<%= @deploy[:user] %>'}
 : ${SERVICE_GROUP:='<%= @deploy[:group] %>'}
 : ${RUBY_PATH:='/usr/local/bin/'}
