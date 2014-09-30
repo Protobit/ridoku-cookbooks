@@ -57,7 +57,7 @@ define :tread_mill_server do
     end
 
     service "#{services} Worker" do
-      service Chef::Provider::Service::Upstart
+      provider Chef::Provider::Service::Upstart
       service_name services
       supports :start => true, :stop => true, :restart => true, :status => true
 
