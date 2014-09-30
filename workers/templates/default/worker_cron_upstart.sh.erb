@@ -1,0 +1,14 @@
+#!/bin/bash
+
+pid_path=<%= @pid_path %>
+app_name=<%= @service %>
+
+function restart_job_server() {
+  echo "${app_name} Server Restarting..."
+  start ${app_name}
+  exit $?
+}
+
+status ${app_name} | grep -q start/running || restart_job_server
+
+echo "${app_name} Server Running..."

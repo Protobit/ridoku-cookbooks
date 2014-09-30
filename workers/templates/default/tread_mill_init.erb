@@ -1,105 +1,15 @@
-#!/bin/bash
+description '<%= @application %> Tread Mill Server'
 
-# define variables that are required
-: ${SERVICE_PATH:='<%= @deploy[:current_path] %>'}
-: ${SERVICE_ENV:="<%= @environment %>"}
-: ${SERVICE_USER:='<%= @deploy[:user] %>'}
-: ${SERVICE_GROUP:='<%= @deploy[:group] %>'}
-: ${RUBY_PATH:='/usr/local/bin/'}
+<%- @environment.each do |name, value| %>
+env <%= name %>='<%= value %>'
+<%- end %>
 
-SERVICE_LOG=${SERVICE_PATH}/log/tread_mill.log
-set_path="cd ${SERVICE_PATH}"
+setuid <%= @deploy[:user] %>
+setgid <%= @deploy[:group] %>
 
-touch ${SERVICE_LOG}
-chown ${SERVICE_USER}:${SERVICE_GROUP} ${SERVICE_LOG}
+chdir <%= @deploy[:current_path] %>
 
-start_tread_mill_server() {
-  echo -n "Starting TreadMill: "
-  su - ${SERVICE_USER} -c "${set_path} && env ${SERVICE_ENV} ${RUBY_PATH}/ruby ${RUBY_PATH}/bundle exec rake tread_mill:run" >> ${SERVICE_LOG} 2>&1
-  res=$?
-  if [ $res -eq 0 ]; then
-    echo "done."
-  else
-    echo "failed."
-  fi
-  return $res
-}
+start on [2345]
+stop on [!2345]
 
-stop_tread_mill_server() {
-  echo -n "Stopping tread_mill: "
-  su - ${SERVICE_USER} -c "kill -QUIT `cat <%= @deploy[:deploy_to] %>/shared/pids/sneakers.pid`" >> ${SERVICE_LOG} 2>&1
-  res=$?
-  if [ $res -eq 0 ]; then
-    echo "done."
-  else
-    echo "failed."
-  fi
-  return $res
-}
-
-zap_tread_mill_server() {
-  echo -n "Zapping tread_mill: "
-  ${set_path}
-
-  for f in tmp/pids/sneakers.*; do
-    kill -9 $(cat $f) >> ${SERVICE_LOG} 2>&1
-    rm -f $f
-  done
-
-  echo "done."
-  cd -
-  return 0
-}
-
-status_tread_mill_server() {
-  echo -n "Status of tread_mill: "
-  ${set_path}
-
-  if [ -e tmp/pids/sneakers.pid ]; then
-    test -e /proc/$(cat tmp/pids/sneakers.pid)
-    ret=$?
-  else
-    ret=1
-  fi
-
-  if [ $ret -eq 0 ]; then
-    echo "running"
-  else
-    echo "not running"
-  fi
-
-  cd - &> /dev/null
-  return $ret
-}
-
-case "$1" in
-  start)
-    start_tread_mill_server
-    exit $?
-  ;;
-  stop)
-    stop_tread_mill_server
-    exit $?
-  ;;
-  status)
-    status_tread_mill_server
-    exit $?
-  ;;
-  restart)
-    stop_tread_mill_server || zap_tread_mill_server
-    sleep 5
-    start_tread_mill_server
-    exit $?
-  ;;
-  zap)
-    zap_tread_mill_server
-    exit $?
-  ;;
-  *)
-    N=/etc/init.d/$(basename $0)
-    echo "Usage: $N {start|stop|restart|zap}" >&2
-    exit 1
-  ;;
-esac
-
-exit 0
+exec /usr/local/bin/ruby /usr/local/bin/bundle exec rake tread_mill:run >> <%= deploy[:deploy_to] %>/shared/logs/tread_mill.log 2>&1

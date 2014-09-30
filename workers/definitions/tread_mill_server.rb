@@ -27,24 +27,24 @@ define :tread_mill_server do
     end
 
     # Create init script for applications.
-    template "/etc/init.d/#{services}" do
+    template "/etc/init/#{services}.conf" do
       source 'tread_mill_init.erb'
-      mode '0700'
+      mode '0600'
 
       group 'root'
       owner 'root'
 
-      env = OpsWorks::RailsConfiguration.build_cmd_environment(deploy)
-
       variables(
+        :application => application,
         :deploy => deploy,
-        :environment => env
+        :environment => (deploy[:app_env] || {}),
+        :pid_path => "#{deploy[:deploy_to]}/shared/pids/sneakers.pid"
       )
     end
 
     # Create Cron Script in cron script directory
     template "#{node[:workers][:cron_path]}/#{services}.sh" do
-      source 'worker_cron.sh.erb'
+      source 'worker_cron_upstart.sh.erb'
       mode '0700'
 
       group 'root'
@@ -57,14 +57,14 @@ define :tread_mill_server do
     end
 
     service "#{services} Worker" do
+      service Chef::Provider::Service::Upstart
       service_name services
-      supports :start => true, :stop => true, :zap => true, :restart => true,
-        :status => true
+      supports :start => true, :stop => true, :restart => true, :status => true
+
       action [:enable, :start]
 
       subscribes :restart, "deploy[#{deploy[:deploy_to]}]"
       subscribes :restart, "template[#{deploy[:deploy_to]}/shared/config/database.yml]"
-      subscribes :restart, "template[#{deploy[:deploy_to]}/shared/scripts/sneakers.rb]"
       subscribes :restart, "template[#{node[:workers][:cron_path]}/#{services}.sh]"
     end
 
