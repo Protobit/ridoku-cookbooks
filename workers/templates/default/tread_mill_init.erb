@@ -12,4 +12,4 @@ chdir <%= @deploy[:current_path] %>
 start on [2345]
 stop on [!2345]
 
-exec /usr/local/bin/ruby /usr/local/bin/bundle exec rake tread_mill:run >> <%= @deploy[:deploy_to] %>/shared/logs/tread_mill.log 2>&1
+exec /usr/local/bin/ruby /usr/local/bin/bundle exec rake tread_mill:run
