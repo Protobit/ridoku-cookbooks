@@ -7,29 +7,32 @@ directory node['postgresql']['config']['data_directory'] do
   action :create
 end
 
-
-unless ::File.exists?("#{node['postgresql']['config']['data_directory']}/PG_VERSION")
-
-  service 'postgresql' do
-    action :stop
+service 'postgresql' do
+  action :stop
+  only_if do
+    !::File.exists?("#{node['postgresql']['config']['data_directory']}/PG_VERSION") ||
+    !::File.exists?("#{node['postgresql']['config']['data_directory']}/postmaster.pid")
   end
+end
 
-  case node['platform_family']
-  when "debian"
-    init_db_command =
-      ["/usr/lib/postgresql/#{node['postgresql']['version']}/bin/initdb",
-      "-D #{node['postgresql']['config']['data_directory']}",
-      "-E #{node['postgresql']['encoding']}"].join(' ')
+case node['platform_family']
+when "debian"
+  init_db_command =
+    ["/usr/lib/postgresql/#{node['postgresql']['version']}/bin/initdb",
+    "-D #{node['postgresql']['config']['data_directory']}",
+    "-E #{node['postgresql']['encoding']}"].join(' ')
 
-    execute 'create new cluster' do
-      user 'postgres'
-      command init_db_command
+  execute 'create new cluster' do
+    user 'postgres'
+    command init_db_command
+    not_if do
+      exists = ::File.exists?("#{node['postgresql']['config']['data_directory']}/PG_VERSION")
+      node.override['postgresql']['restart'] = !exists
+      exists
     end
-  else
-    Chef::Application.fatal!('Invalid platform family! (ubuntu only).')
   end
-
-  node.override['postgresql']['restart'] = true
+else
+  Chef::Application.fatal!('Invalid platform family! (ubuntu only).')
 end
 
 node.default['postgresql']['config_pgtune']['db_type'] = 'web'
@@ -88,6 +91,13 @@ template "#{node['postgresql']['dir']}/postgresql.conf" do
   owner "postgres"
   group "postgres"
   mode 0600
+end
+
+service 'postgresql' do
+  action :restart
+  not_if do
+    ::File.exists?("#{node['postgresql']['config']['data_directory']}/postmaster.pid")
+  end
 end
 
 service 'postgresql' do 
