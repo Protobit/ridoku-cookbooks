@@ -59,10 +59,12 @@ define :tread_mill_server do
     service "#{services} Worker" do
       provider Chef::Provider::Service::Upstart
       service_name services
-      # Set restart to false so the service LWRP will use stop & start.
+
       supports :start => true, :stop => true, :restart => false, :status => true
 
       action [:enable, :start]
+
+      restart_command "/sbin/stop #{services}; /sbin/start #{services}"
 
       subscribes :restart, "deploy[#{deploy[:deploy_to]}]"
       subscribes :restart, "template[#{deploy[:deploy_to]}/shared/config/database.yml]"
