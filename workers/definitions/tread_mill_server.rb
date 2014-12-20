@@ -59,7 +59,8 @@ define :tread_mill_server do
     service "#{services} Worker" do
       provider Chef::Provider::Service::Upstart
       service_name services
-      supports :start => true, :stop => true, :restart => true, :status => true
+      # Set restart to false so the service LWRP will use stop & start.
+      supports :start => true, :stop => true, :restart => false, :status => true
 
       action [:enable, :start]
 
