@@ -67,6 +67,7 @@ define :tread_mill_server do
       subscribes :restart, "deploy[#{deploy[:deploy_to]}]"
       subscribes :restart, "template[#{deploy[:deploy_to]}/shared/config/database.yml]"
       subscribes :restart, "template[#{node[:workers][:cron_path]}/#{services}.sh]"
+      subscribes :restart, "template[/etc/init/#{services}.conf]"
     end
 
     # Add application cron job.
